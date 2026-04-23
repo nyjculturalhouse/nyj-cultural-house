@@ -4,20 +4,24 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- 프리텐다드 폰트 -->
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
+
   <style>
     body {
-      font-family: sans-serif;
+      font-family: 'Pretendard', sans-serif;
       margin: 0;
       background: #f5f6f8;
     }
 
-    h1 {
+    .header {
       text-align: center;
       padding: 18px;
-      font-size: 22px;
+      font-size: 18px;
+      font-weight: 600;
       background: #2d6cdf;
       color: white;
-      margin: 0;
     }
 
     .page {
@@ -62,36 +66,35 @@
       margin: 10px 0;
       font-size: 18px;
     }
-
   </style>
 </head>
 
 <body>
 
-<h1>남양주시 문화의집</h1>
+<!-- 헤더 (로고 대신 텍스트) -->
+<div class="header">
+  남양주시 문화의집
+</div>
 
 <!-- ================= HOME ================= -->
 <div id="home" class="page active">
-  <button onclick="go('attendance1')">📋 동아리 출석체크</button>
+  <button onclick="go('attendance')">📋 동아리 출석체크</button>
   <button onclick="go('booking')">🏢 대관신청</button>
   <button onclick="go('external')">📣 외부활동공유</button>
   <button onclick="go('calendar')">📅 캘린더</button>
 </div>
 
-<!-- ================= 출석 1 ================= -->
-<div id="attendance1" class="page">
+<!-- ================= 출석 ================= -->
+<div id="attendance" class="page">
+
   <div class="title">동아리 선택</div>
   <div id="clubList"></div>
-  <button class="back" onclick="go('home')">돌아가기</button>
-</div>
 
-<!-- ================= 출석 2 ================= -->
-<div id="attendance2" class="page">
   <div class="title">이름 선택</div>
   <div id="memberList"></div>
 
   <button onclick="submitAttendance()">출석 제출</button>
-  <button class="back" onclick="go('home')">처음으로</button>
+  <button class="back" onclick="go('home')">돌아가기</button>
 </div>
 
 <!-- ================= 대관 ================= -->
@@ -157,10 +160,12 @@ function go(page){
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(page).classList.add('active');
 
-  if(page === "attendance1") loadClubs();
+  if(page === "attendance"){
+    loadClubs();
+  }
 }
 
-/* ================= 동아리 로딩 ================= */
+/* ================= 동아리 목록 (B열) ================= */
 function loadClubs(){
   google.script.run.withSuccessHandler(data=>{
     let html = "";
@@ -171,10 +176,9 @@ function loadClubs(){
   }).getClubs();
 }
 
-/* ================= 동아리 선택 ================= */
+/* ================= 이름 목록 (C열) ================= */
 function selectClub(club){
   selectedClub = club;
-  go("attendance2");
 
   google.script.run.withSuccessHandler(data=>{
     let html = "";
@@ -193,10 +197,20 @@ function selectMember(name){
 
 /* ================= 출석 제출 ================= */
 function submitAttendance(){
+
+  if(!selectedClub || !selectedMember){
+    alert("동아리와 이름을 선택해주세요");
+    return;
+  }
+
   google.script.run.withSuccessHandler(()=>{
     alert("출석 완료");
     go("home");
-  }).saveAttendance(selectedClub, selectedMember, new Date().toLocaleDateString());
+  }).saveAttendance(
+    selectedClub,
+    selectedMember,
+    new Date().toLocaleDateString()
+  );
 }
 
 /* ================= 대관 ================= */
