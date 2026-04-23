@@ -2,246 +2,127 @@
 <html>
 <head>
   <base target="_top">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- 프리텐다드 폰트 -->
-  <link rel="stylesheet" as="style" crossorigin
-    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.css">
-
   <style>
-    body {
-      font-family: 'Pretendard', sans-serif;
-      margin: 0;
-      background: #f5f6f8;
-    }
+    body { font-family: 'Malgun Gothic', sans-serif; background-color: #f5f7fa; margin: 0; padding: 0; }
+    .nav-bar { background-color: #2b67d9; color: white; padding: 20px; text-align: center; font-weight: bold; font-size: 1.2rem; }
+    .container { padding: 20px; max-width: 500px; margin: auto; }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    
+    label { font-weight: bold; display: block; margin-bottom: 10px; color: #333; }
+    
+    /* 요일 버튼 */
+    .day-flex { display: flex; gap: 5px; margin-bottom: 15px; }
+    .day-btn { flex: 1; padding: 10px 0; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-weight: bold; }
+    .day-btn.active { background-color: #2b67d9; color: white; border-color: #2b67d9; }
 
-    .header {
-      text-align: center;
-      padding: 18px;
-      font-size: 18px;
-      font-weight: 600;
-      background: #2d6cdf;
-      color: white;
-    }
+    select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem; margin-bottom: 15px; }
 
-    .page {
-      display: none;
-      padding: 15px;
-    }
+    /* 이름 버튼 */
+    .name-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .name-item { padding: 8px 15px; background: #eee; border-radius: 20px; cursor: pointer; font-size: 0.9rem; border: 1px solid #ccc; }
+    .name-item.selected { background: #2b67d9; color: white; border-color: #2b67d9; }
 
-    .active {
-      display: block;
-    }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      margin: 6px 0;
-      border: none;
-      border-radius: 10px;
-      background: #2d6cdf;
-      color: white;
-      font-size: 15px;
-    }
-
-    .back {
-      background: #777;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin: 6px 0;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 14px;
-    }
-
-    textarea {
-      height: 80px;
-    }
-
-    .title {
-      font-weight: bold;
-      margin: 10px 0;
-      font-size: 18px;
-    }
+    .btn-main { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+    .btn-submit { background-color: #2b67d9; color: white; }
+    .btn-back { background-color: #6c757d; color: white; margin-top: 10px; }
+    
+    .loading { text-align: center; color: #888; font-size: 0.9rem; padding: 10px; }
   </style>
 </head>
-
 <body>
 
-<!-- 헤더 (로고 대신 텍스트) -->
-<div class="header">
-  남양주시 문화의집
+<div class="nav-bar">남양주시 문화의집</div>
+
+<div class="container">
+  <div class="card">
+    <label>1. 요일 선택</label>
+    <div class="day-flex">
+      <button class="day-btn" onclick="clickDay(this, '월')">월</button>
+      <button class="day-btn" onclick="clickDay(this, '화')">화</button>
+      <button class="day-btn" onclick="clickDay(this, '수')">수</button>
+      <button class="day-btn" onclick="clickDay(this, '목')">목</button>
+      <button class="day-btn" onclick="clickDay(this, '금')">금</button>
+    </div>
+
+    <label>2. 동아리명 선택</label>
+    <select id="clubSelect" onchange="loadMembers()">
+      <option value="">요일을 먼저 선택하세요</option>
+    </select>
+
+    <label>3. 출석 인원 선택</label>
+    <div id="memberList" class="name-grid">
+      <div class="loading">동아리를 선택해 주세요.</div>
+    </div>
+  </div>
+
+  <button id="submitBtn" class="btn-main btn-submit" onclick="submit()" disabled>출석 제출</button>
+  <button class="btn-main btn-back" onclick="location.reload()">새로고침</button>
 </div>
 
-<!-- ================= HOME ================= -->
-<div id="home" class="page active">
-  <button onclick="go('attendance')">📋 동아리 출석체크</button>
-  <button onclick="go('booking')">🏢 대관신청</button>
-  <button onclick="go('external')">📣 외부활동공유</button>
-  <button onclick="go('calendar')">📅 캘린더</button>
-</div>
-
-<!-- ================= 출석 ================= -->
-<div id="attendance" class="page">
-
-  <div class="title">동아리 선택</div>
-  <div id="clubList"></div>
-
-  <div class="title">이름 선택</div>
-  <div id="memberList"></div>
-
-  <button onclick="submitAttendance()">출석 제출</button>
-  <button class="back" onclick="go('home')">돌아가기</button>
-</div>
-
-<!-- ================= 대관 ================= -->
-<div id="booking" class="page">
-  <div class="title">대관 신청</div>
-
-  <input id="b_name" placeholder="이름">
-  <input id="b_phone" placeholder="전화번호">
-  <input id="b_space" placeholder="대관공간">
-  <textarea id="b_content" placeholder="대관내용"></textarea>
-
-  <label>대관일시</label>
-  <input id="b_datetime" type="datetime-local">
-
-  <label>이용시간</label>
-  <select id="b_hours">
-    <option value="1">1시간</option>
-    <option value="2">2시간</option>
-    <option value="3">3시간</option>
-    <option value="4">4시간</option>
-  </select>
-
-  <button onclick="submitBooking()">제출</button>
-  <button class="back" onclick="go('home')">돌아가기</button>
-</div>
-
-<!-- ================= 외부활동 ================= -->
-<div id="external" class="page">
-  <div class="title">외부활동 공유</div>
-
-  <input id="e_club" placeholder="동아리명">
-  <input id="e_phone" placeholder="전화번호">
-  <input id="e_event" placeholder="행사명">
-  <textarea id="e_content" placeholder="활동내용"></textarea>
-
-  <label>활동일시</label>
-  <input id="e_datetime" type="datetime-local">
-
-  <button onclick="submitExternal()">제출</button>
-  <button class="back" onclick="go('home')">돌아가기</button>
-</div>
-
-<!-- ================= 캘린더 ================= -->
-<div id="calendar" class="page">
-  <div class="title">캘린더</div>
-
-  <iframe
-    src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse%40gmail.com&ctz=Asia%2FSeoul"
-    style="border:0; width:100%; height:500px;">
-  </iframe>
-
-  <button class="back" onclick="go('home')">돌아가기</button>
-</div>
-
-<!-- ================= SCRIPT ================= -->
 <script>
+  let currentDay = "";
+  let selectedNames = [];
 
-let selectedClub = "";
-let selectedMember = "";
-
-/* ================= 페이지 이동 ================= */
-function go(page){
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById(page).classList.add('active');
-
-  if(page === "attendance"){
-    loadClubs();
-  }
-}
-
-/* ================= 동아리 목록 (B열) ================= */
-function loadClubs(){
-  google.script.run.withSuccessHandler(data=>{
-    let html = "";
-    data.forEach(c=>{
-      html += `<button onclick="selectClub('${c}')">${c}</button>`;
-    });
-    document.getElementById("clubList").innerHTML = html;
-  }).getClubs();
-}
-
-/* ================= 이름 목록 (C열) ================= */
-function selectClub(club){
-  selectedClub = club;
-
-  google.script.run.withSuccessHandler(data=>{
-    let html = "";
-    data.forEach(m=>{
-      html += `<button onclick="selectMember('${m}')">${m}</button>`;
-    });
-    document.getElementById("memberList").innerHTML = html;
-  }).getMembers(club);
-}
-
-/* ================= 이름 선택 ================= */
-function selectMember(name){
-  selectedMember = name;
-  alert("선택됨: " + selectedClub + " / " + selectedMember);
-}
-
-/* ================= 출석 제출 ================= */
-function submitAttendance(){
-
-  if(!selectedClub || !selectedMember){
-    alert("동아리와 이름을 선택해주세요");
-    return;
+  function clickDay(btn, day) {
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentDay = day;
+    
+    const select = document.getElementById('clubSelect');
+    select.innerHTML = '<option>로딩 중...</option>';
+    
+    google.script.run.withSuccessHandler(clubs => {
+      select.innerHTML = '<option value="">동아리를 선택하세요</option>';
+      clubs.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = opt.text = c;
+        select.appendChild(opt);
+      });
+    }).getClubsByDay(day);
   }
 
-  google.script.run.withSuccessHandler(()=>{
-    alert("출석 완료");
-    go("home");
-  }).saveAttendance(
-    selectedClub,
-    selectedMember,
-    new Date().toLocaleDateString()
-  );
-}
+  function loadMembers() {
+    const club = document.getElementById('clubSelect').value;
+    const listDiv = document.getElementById('memberList');
+    if(!club) return;
+    
+    listDiv.innerHTML = '<div class="loading">명단을 불러오는 중...</div>';
+    selectedNames = [];
+    updateBtnState();
 
-/* ================= 대관 ================= */
-function submitBooking(){
-  google.script.run.withSuccessHandler(()=>{
-    alert("대관 등록 완료");
-    go("home");
-  }).submitBooking({
-    name: b_name.value,
-    phone: b_phone.value,
-    space: b_space.value,
-    content: b_content.value,
-    dateTime: b_datetime.value,
-    hours: b_hours.value
-  });
-}
+    google.script.run.withSuccessHandler(members => {
+      listDiv.innerHTML = "";
+      members.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'name-item';
+        div.textContent = m;
+        div.onclick = function() {
+          this.classList.toggle('selected');
+          const idx = selectedNames.indexOf(m);
+          if(idx > -1) selectedNames.splice(idx, 1);
+          else selectedNames.push(m);
+          updateBtnState();
+        };
+        listDiv.appendChild(div);
+      });
+    }).getMembers(club);
+  }
 
-/* ================= 외부활동 ================= */
-function submitExternal(){
-  google.script.run.withSuccessHandler(()=>{
-    alert("등록 완료");
-    go("home");
-  }).submitExternal({
-    club: e_club.value,
-    phone: e_phone.value,
-    event: e_event.value,
-    content: e_content.value,
-    dateTime: e_datetime.value
-  });
-}
+  function updateBtnState() {
+    document.getElementById('submitBtn').disabled = selectedNames.length === 0;
+  }
 
+  function submit() {
+    const club = document.getElementById('clubSelect').value;
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = "제출 중...";
+
+    google.script.run.withSuccessHandler(res => {
+      alert(res);
+      location.reload();
+    }).saveAttendance(club, selectedNames, currentDay);
+  }
 </script>
 
 </body>
