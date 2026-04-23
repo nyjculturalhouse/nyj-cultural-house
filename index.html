@@ -55,6 +55,14 @@ body {
   background: #3182f6;
   transition: 0.3s;
 }
+
+input, textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
 </style>
 </head>
 
@@ -73,7 +81,6 @@ body {
 
 <!-- 출석 -->
 <div id="attendance" class="card hidden">
-
   <div class="progress">
     <div class="bar" id="bar"></div>
   </div>
@@ -82,6 +89,34 @@ body {
 
   <button class="btn" onclick="submitAttendance()">출석 저장</button>
   <button class="btn" onclick="resetAll(); go('home')">홈으로</button>
+</div>
+
+<!-- 대관 -->
+<div id="reservation" class="card hidden">
+  <h3>대관 신청</h3>
+
+  <input id="r_name" placeholder="이름">
+  <input id="r_phone" placeholder="연락처">
+  <input id="r_space" placeholder="공간">
+  <input id="r_date" type="datetime-local">
+  <textarea id="r_purpose" placeholder="사용 목적"></textarea>
+
+  <button class="btn" onclick="submitReservation()">신청</button>
+  <button class="btn" onclick="go('home')">뒤로</button>
+</div>
+
+<!-- 외부 일정 -->
+<div id="external" class="card hidden">
+  <h3>외부 일정 공유</h3>
+
+  <input id="e_club" placeholder="동아리">
+  <input id="e_writer" placeholder="작성자">
+  <input id="e_title" placeholder="제목">
+  <input id="e_date" type="datetime-local">
+  <textarea id="e_content" placeholder="내용"></textarea>
+
+  <button class="btn" onclick="submitExternal()">등록</button>
+  <button class="btn" onclick="go('home')">뒤로</button>
 </div>
 
 <!-- 캘린더 -->
@@ -105,6 +140,9 @@ let state = {
   members: []
 };
 
+/* ---------------------------
+   화면 전환
+----------------------------*/
 function go(id){
   document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
@@ -115,11 +153,10 @@ function go(id){
 }
 
 /* ---------------------------
-   진행바
+   출석 진행바
 ----------------------------*/
 function updateBar(){
-  const bar = document.getElementById("bar");
-  bar.style.width = (state.step / 3 * 100) + "%";
+  document.getElementById("bar").style.width = (state.step / 3 * 100) + "%";
 }
 
 /* ---------------------------
@@ -130,7 +167,7 @@ function resetAll(){
 }
 
 /* ---------------------------
-   STEP 1 - 요일
+   STEP 1
 ----------------------------*/
 function renderDays(){
   state.step = 1;
@@ -154,7 +191,7 @@ function renderDays(){
 }
 
 /* ---------------------------
-   STEP 2 - 동아리
+   STEP 2
 ----------------------------*/
 function loadClubs(day){
   state.step = 2;
@@ -162,6 +199,7 @@ function loadClubs(day){
 
   fetch(API_URL,{
     method:"POST",
+    headers: { "Content-Type":"application/json" },
     body:JSON.stringify({type:"getClubs", day})
   })
   .then(r=>r.json())
@@ -169,7 +207,7 @@ function loadClubs(day){
     const el = document.getElementById("step-area");
     el.innerHTML = "<h3>2. 동아리 선택</h3>";
 
-    data.clubs.forEach(c=>{
+    (data.clubs || []).forEach(c=>{
       const b = document.createElement("button");
       b.className = "btn";
       b.innerText = c;
@@ -185,7 +223,7 @@ function loadClubs(day){
 }
 
 /* ---------------------------
-   STEP 3 - 이름
+   STEP 3
 ----------------------------*/
 function loadMembers(club){
   state.step = 3;
@@ -194,6 +232,7 @@ function loadMembers(club){
 
   fetch(API_URL,{
     method:"POST",
+    headers: { "Content-Type":"application/json" },
     body:JSON.stringify({type:"getMembers", club})
   })
   .then(r=>r.json())
@@ -201,7 +240,7 @@ function loadMembers(club){
     const el = document.getElementById("step-area");
     el.innerHTML = "<h3>3. 이름 선택</h3>";
 
-    data.members.forEach(m=>{
+    (data.members || []).forEach(m=>{
       const b = document.createElement("button");
       b.className = "btn";
       b.innerText = m;
@@ -223,10 +262,9 @@ function loadMembers(club){
 }
 
 /* ---------------------------
-   제출
+   출석 저장
 ----------------------------*/
 function submitAttendance(){
-
   if(!state.club || state.members.length===0){
     alert("선택 안됨");
     return;
@@ -234,6 +272,7 @@ function submitAttendance(){
 
   fetch(API_URL,{
     method:"POST",
+    headers: { "Content-Type":"application/json" },
     body:JSON.stringify({
       type:"attendance",
       club: state.club,
@@ -244,6 +283,58 @@ function submitAttendance(){
     alert("출석 완료");
     resetAll();
     go("home");
+  });
+}
+
+/* ---------------------------
+   대관 신청
+----------------------------*/
+function submitReservation(){
+  fetch(API_URL,{
+    method:"POST",
+    headers: { "Content-Type":"application/json" },
+    body:JSON.stringify({
+      type:"reservation",
+      name: r_name.value,
+      phone: r_phone.value,
+      space: r_space.value,
+      date: r_date.value,
+      purpose: r_purpose.value
+    })
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.error) alert(res.error);
+    else {
+      alert("신청 완료");
+      go("home");
+    }
+  });
+}
+
+/* ---------------------------
+   외부 일정
+----------------------------*/
+function submitExternal(){
+  fetch(API_URL,{
+    method:"POST",
+    headers: { "Content-Type":"application/json" },
+    body:JSON.stringify({
+      type:"external",
+      club: e_club.value,
+      writer: e_writer.value,
+      title: e_title.value,
+      content: e_content.value,
+      date: e_date.value
+    })
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.error) alert(res.error);
+    else {
+      alert("등록 완료");
+      go("home");
+    }
   });
 }
 </script>
