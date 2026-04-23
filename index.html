@@ -4,15 +4,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {font-family:'Noto Sans KR'; background:#f2f4f6; margin:0;}
-.container {padding:20px; max-width:600px; margin:auto;}
-.card {background:#fff; padding:20px; border-radius:16px; margin-top:15px;}
-.btn {width:100%; padding:15px; margin-top:10px; font-size:16px; border:0; border-radius:10px;}
-.hidden {display:none;}
-.selected {background:#3182f6; color:#fff;}
-.small {font-size:13px; color:#666;}
-input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
-h2 {text-align:center;}
+body {
+  font-family: 'Noto Sans KR';
+  background: #f2f4f6;
+  margin: 0;
+}
+
+.container {
+  padding: 20px;
+  max-width: 600px;
+  margin: auto;
+}
+
+.card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 16px;
+  margin-top: 15px;
+}
+
+.btn {
+  width: 100%;
+  padding: 15px;
+  margin-top: 10px;
+  font-size: 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.hidden { display:none; }
+
+.selected {
+  background:#3182f6;
+  color:#fff;
+}
+
+.progress {
+  height: 8px;
+  background: #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.bar {
+  height: 100%;
+  width: 0%;
+  background: #3182f6;
+  transition: 0.3s;
+}
 </style>
 </head>
 
@@ -31,158 +73,110 @@ h2 {text-align:center;}
 
 <!-- 출석 -->
 <div id="attendance" class="card hidden">
-  <h3>출석체크</h3>
-  <div id="status" class="small"></div>
 
-  <div id="step-days"></div>
-  <div id="step-clubs"></div>
-  <div id="step-members"></div>
+  <div class="progress">
+    <div class="bar" id="bar"></div>
+  </div>
+
+  <div id="step-area"></div>
 
   <button class="btn" onclick="submitAttendance()">출석 저장</button>
-  <button class="btn" onclick="go('home'); resetAttendance()">뒤로</button>
-</div>
-
-<!-- 대관 -->
-<div id="reservation" class="card hidden">
-  <h3>대관 신청</h3>
-
-  <input id="r-name" placeholder="이름">
-  <input id="r-phone" placeholder="연락처">
-  <input id="r-space" placeholder="공간">
-  <input id="r-date" type="datetime-local" step="1800">
-  <input id="r-purpose" placeholder="목적">
-
-  <button class="btn" onclick="submitReservation()">신청</button>
-  <button class="btn" onclick="go('home')">뒤로</button>
-</div>
-
-<!-- 외부 일정 -->
-<div id="external" class="card hidden">
-  <h3>외부 일정 공유</h3>
-
-  <input id="e-club" placeholder="동아리명">
-  <input id="e-writer" placeholder="작성자">
-  <input id="e-title" placeholder="제목">
-  <input id="e-date" type="datetime-local">
-  <input id="e-content" placeholder="내용">
-
-  <button class="btn" onclick="submitExternal()">등록</button>
-  <button class="btn" onclick="go('home')">뒤로</button>
+  <button class="btn" onclick="resetAll(); go('home')">홈으로</button>
 </div>
 
 <!-- 캘린더 -->
 <div id="calendar" class="card hidden">
-  <h3>캘린더</h3>
-
   <iframe 
     src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse@gmail.com&ctz=Asia%2FSeoul"
     style="width:100%; height:500px; border:0;">
   </iframe>
-
   <button class="btn" onclick="go('home')">뒤로</button>
 </div>
 
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyO4MEH9YOoEgNoeWmfMwuWKiFTbBhcXAbFYub3ktusOmZxe1kng0hlFpKNmWrMV-wRvw/exec";
+const API_URL = "YOUR_WEBAPP_URL";
 
-/* =========================
-   상태
-========================= */
 let state = {
+  step: 1,
   day: "",
   club: "",
   members: []
 };
 
-/* =========================
-   화면 이동
-========================= */
 function go(id){
   document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 
-  if(id === "attendance") renderDays();
+  if(id === "attendance"){
+    renderDays();
+  }
 }
 
-/* =========================
+/* ---------------------------
+   진행바
+----------------------------*/
+function updateBar(){
+  const bar = document.getElementById("bar");
+  bar.style.width = (state.step / 3 * 100) + "%";
+}
+
+/* ---------------------------
    초기화
-========================= */
-function resetAttendance(){
-  state = { day:"", club:"", members:[] };
-
-  document.getElementById("step-days").innerHTML = "";
-  document.getElementById("step-clubs").innerHTML = "";
-  document.getElementById("step-members").innerHTML = "";
-  document.getElementById("status").innerText = "";
+----------------------------*/
+function resetAll(){
+  state = { step:1, day:"", club:"", members:[] };
 }
 
-/* =========================
-   상태 표시
-========================= */
-function updateStatus(){
-  document.getElementById("status").innerText =
-    `📅 ${state.day || "-"} → 🏷 ${state.club || "-"} → 👤 ${state.members.length}명`;
-}
-
-/* =========================
-   1️⃣ 요일
-========================= */
+/* ---------------------------
+   STEP 1 - 요일
+----------------------------*/
 function renderDays(){
-  const days = ["화","수","목","금","토","일"];
-  const el = document.getElementById("step-days");
+  state.step = 1;
+  updateBar();
 
-  el.innerHTML = "<p class='small'>1️⃣ 요일 선택</p>";
+  const el = document.getElementById("step-area");
+  el.innerHTML = "<h3>1. 요일 선택</h3>";
 
-  days.forEach(d=>{
+  ["화","수","목","금","토","일"].forEach(d=>{
     const b = document.createElement("button");
     b.className = "btn";
     b.innerText = d + "요일";
 
-    b.onclick = () => {
+    b.onclick = ()=>{
       state.day = d;
-      state.club = "";
-      state.members = [];
-
-      clearStep("clubs");
-      clearStep("members");
-
-      renderClubs(d);
-      updateStatus();
+      loadClubs(d);
     };
 
     el.appendChild(b);
   });
 }
 
-/* =========================
-   2️⃣ 동아리
-========================= */
-function renderClubs(day){
+/* ---------------------------
+   STEP 2 - 동아리
+----------------------------*/
+function loadClubs(day){
+  state.step = 2;
+  updateBar();
+
   fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({type:"getClubs", day})
   })
   .then(r=>r.json())
   .then(data=>{
-    const el = document.getElementById("step-clubs");
-
-    el.innerHTML = "<p class='small'>2️⃣ 동아리 선택</p>";
+    const el = document.getElementById("step-area");
+    el.innerHTML = "<h3>2. 동아리 선택</h3>";
 
     data.clubs.forEach(c=>{
       const b = document.createElement("button");
       b.className = "btn";
       b.innerText = c;
 
-      b.onclick = () => {
+      b.onclick = ()=>{
         state.club = c;
-        state.members = [];
-
-        clearStep("members");
-
-        renderMembers(c);
-        updateStatus();
+        loadMembers(c);
       };
 
       el.appendChild(b);
@@ -190,37 +184,37 @@ function renderClubs(day){
   });
 }
 
-/* =========================
-   3️⃣ 이름
-========================= */
-function renderMembers(club){
+/* ---------------------------
+   STEP 3 - 이름
+----------------------------*/
+function loadMembers(club){
+  state.step = 3;
+  updateBar();
+  state.members = [];
+
   fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({type:"getMembers", club})
   })
   .then(r=>r.json())
   .then(data=>{
-    const el = document.getElementById("step-members");
-
-    el.innerHTML = "<p class='small'>3️⃣ 이름 선택</p>";
+    const el = document.getElementById("step-area");
+    el.innerHTML = "<h3>3. 이름 선택</h3>";
 
     data.members.forEach(m=>{
       const b = document.createElement("button");
       b.className = "btn";
       b.innerText = m;
 
-      b.onclick = () => {
+      b.onclick = ()=>{
         const i = state.members.indexOf(m);
-
-        if(i > -1){
+        if(i>-1){
           state.members.splice(i,1);
           b.classList.remove("selected");
         }else{
           state.members.push(m);
           b.classList.add("selected");
         }
-
-        updateStatus();
       };
 
       el.appendChild(b);
@@ -228,20 +222,13 @@ function renderMembers(club){
   });
 }
 
-/* =========================
-   step 초기화
-========================= */
-function clearStep(step){
-  document.getElementById("step-" + step).innerHTML = "";
-}
-
-/* =========================
-   출석 저장
-========================= */
+/* ---------------------------
+   제출
+----------------------------*/
 function submitAttendance(){
 
-  if(!state.club){
-    alert("동아리를 선택하세요");
+  if(!state.club || state.members.length===0){
+    alert("선택 안됨");
     return;
   }
 
@@ -253,50 +240,11 @@ function submitAttendance(){
       members: state.members.join(",")
     })
   })
-  .then(r=>r.json())
-  .then(res=>{
-    if(res.error){
-      alert(res.error);
-    }else{
-      alert("출석 완료");
-      resetAttendance();
-      go("home");
-    }
+  .then(()=> {
+    alert("출석 완료");
+    resetAll();
+    go("home");
   });
-}
-
-/* =========================
-   대관
-========================= */
-function submitReservation(){
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      type:"reservation",
-      name:document.getElementById("r-name").value,
-      phone:document.getElementById("r-phone").value,
-      space:document.getElementById("r-space").value,
-      date:document.getElementById("r-date").value,
-      purpose:document.getElementById("r-purpose").value
-    })
-  }).then(()=>alert("신청 완료"));
-}
-
-/* =========================
-   외부 일정
-========================= */
-function submitExternal(){
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      type:"external",
-      club:document.getElementById("e-club").value,
-      writer:document.getElementById("e-writer").value,
-      title:document.getElementById("e-title").value,
-      date:document.getElementById("e-date").value,
-      content:document.getElementById("e-content").value
-    })
-  }).then(()=>alert("등록 완료"));
 }
 </script>
 
