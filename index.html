@@ -7,10 +7,11 @@
 body {font-family:'Noto Sans KR'; background:#f2f4f6; margin:0;}
 .container {padding:20px; max-width:600px; margin:auto;}
 .card {background:#fff; padding:20px; border-radius:16px; margin-top:15px;}
-.btn {width:100%; padding:15px; margin-top:10px; font-size:16px;}
+.btn {width:100%; padding:15px; margin-top:10px; font-size:16px; border:0; border-radius:10px;}
 .hidden {display:none;}
 .selected {background:#3182f6; color:#fff;}
-input {width:100%; padding:12px; margin-top:10px;}
+input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
+.small {font-size:13px; color:#666;}
 </style>
 </head>
 
@@ -30,9 +31,12 @@ input {width:100%; padding:12px; margin-top:10px;}
 <!-- 출석 -->
 <div id="attendance" class="card hidden">
   <h3>출석체크</h3>
+
+  <div id="status" class="small"></div>
   <div id="days"></div>
   <div id="clubs"></div>
   <div id="members"></div>
+
   <button class="btn" onclick="submitAttendance()">출석 저장</button>
   <button class="btn" onclick="go('home')">뒤로</button>
 </div>
@@ -40,11 +44,16 @@ input {width:100%; padding:12px; margin-top:10px;}
 <!-- 대관 -->
 <div id="reservation" class="card hidden">
   <h3>대관 신청</h3>
+
   <input id="r-name" placeholder="이름">
   <input id="r-phone" placeholder="연락처">
   <input id="r-space" placeholder="공간">
-  <input id="r-date" type="datetime-local">
+
+  <!-- 🔥 30분 단위 -->
+  <input id="r-date" type="datetime-local" step="1800">
+
   <input id="r-purpose" placeholder="목적">
+
   <button class="btn" onclick="submitReservation()">신청</button>
   <button class="btn" onclick="go('home')">뒤로</button>
 </div>
@@ -52,11 +61,13 @@ input {width:100%; padding:12px; margin-top:10px;}
 <!-- 외부 일정 -->
 <div id="external" class="card hidden">
   <h3>외부 일정 공유</h3>
+
   <input id="e-club" placeholder="동아리명">
   <input id="e-writer" placeholder="작성자">
   <input id="e-title" placeholder="제목">
   <input id="e-date" type="datetime-local">
   <input id="e-content" placeholder="내용">
+
   <button class="btn" onclick="submitExternal()">등록</button>
   <button class="btn" onclick="go('home')">뒤로</button>
 </div>
@@ -64,10 +75,12 @@ input {width:100%; padding:12px; margin-top:10px;}
 <!-- 캘린더 -->
 <div id="calendar" class="card hidden">
   <h3>캘린더</h3>
+
   <iframe 
     src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse@gmail.com&ctz=Asia%2FSeoul?v=2"
     style="width:100%; height:500px; border:0;">
   </iframe>
+
   <button class="btn" onclick="go('home')">뒤로</button>
 </div>
 
@@ -76,9 +89,12 @@ input {width:100%; padding:12px; margin-top:10px;}
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyO4MEH9YOoEgNoeWmfMwuWKiFTbBhcXAbFYub3ktusOmZxe1kng0hlFpKNmWrMV-wRvw/exec";
 
-let selectedClub="", selectedMembers=[];
+/******** 상태 관리 ********/
+let selectedDay = "";
+let selectedClub = "";
+let selectedMembers = [];
 
-/******** 화면 전환 ********/
+/******** 화면 이동 ********/
 function go(id){
   document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
@@ -86,17 +102,32 @@ function go(id){
   if(id==="attendance") loadDays();
 }
 
+/******** 상태 표시 ********/
+function updateStatus(){
+  document.getElementById("status").innerText =
+    `선택 → ${selectedDay || "-"} / ${selectedClub || "-"} / 인원 ${selectedMembers.length}`;
+}
+
 /******** 요일 ********/
 function loadDays(){
   const days=["화","수","목","금","토","일"];
   const el=document.getElementById("days");
-  el.innerHTML="";
+
+  el.innerHTML="<p class='small'>1️⃣ 요일 선택</p>";
 
   days.forEach(d=>{
     const b=document.createElement("button");
     b.className="btn";
-    b.innerText=d+"요일";
-    b.onclick=()=>loadClubs(d);
+    b.innerText="📅 " + d + "요일";
+
+    b.onclick=()=>{
+      selectedDay = d;
+      selectedClub = "";
+      selectedMembers = [];
+      loadClubs(d);
+      updateStatus();
+    };
+
     el.appendChild(b);
   });
 }
@@ -110,13 +141,21 @@ function loadClubs(day){
   .then(r=>r.json())
   .then(data=>{
     const el=document.getElementById("clubs");
-    el.innerHTML="";
+
+    el.innerHTML="<p class='small'>2️⃣ 동아리 선택</p>";
 
     data.clubs.forEach(c=>{
       const b=document.createElement("button");
       b.className="btn";
-      b.innerText=c;
-      b.onclick=()=>loadMembers(c);
+      b.innerText="🏷 " + c;
+
+      b.onclick=()=>{
+        selectedClub = c;
+        selectedMembers = [];
+        loadMembers(c);
+        updateStatus();
+      };
+
       el.appendChild(b);
     });
   });
@@ -124,9 +163,6 @@ function loadClubs(day){
 
 /******** 멤버 ********/
 function loadMembers(club){
-  selectedClub=club;
-  selectedMembers=[];
-
   fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({type:"getMembers", club:club})
@@ -134,17 +170,22 @@ function loadMembers(club){
   .then(r=>r.json())
   .then(data=>{
     const el=document.getElementById("members");
-    el.innerHTML="";
+
+    el.innerHTML="<p class='small'>3️⃣ 이름 선택</p>";
 
     data.members.forEach(m=>{
       const b=document.createElement("button");
       b.className="btn";
-      b.innerText=m;
+      b.innerText="👤 " + m;
 
       b.onclick=function(){
         this.classList.toggle("selected");
-        const i=selectedMembers.indexOf(m);
-        i>-1 ? selectedMembers.splice(i,1) : selectedMembers.push(m);
+
+        const i = selectedMembers.indexOf(m);
+        if(i>-1) selectedMembers.splice(i,1);
+        else selectedMembers.push(m);
+
+        updateStatus();
       };
 
       el.appendChild(b);
@@ -154,6 +195,12 @@ function loadMembers(club){
 
 /******** 출석 ********/
 function submitAttendance(){
+
+  if(!selectedClub){
+    alert("동아리를 선택하세요");
+    return;
+  }
+
   fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({
@@ -161,11 +208,38 @@ function submitAttendance(){
       club:selectedClub,
       members:selectedMembers.join(",")
     })
-  }).then(()=>alert("출석 완료"));
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.error) alert(res.error);
+    else {
+      alert("출석 완료");
+      selectedDay = "";
+      selectedClub = "";
+      selectedMembers = [];
+      updateStatus();
+    }
+  });
 }
 
-/******** 대관 ********/
+/******** 대관 (30분 제한) ********/
 function submitReservation(){
+
+  const dateInput = document.getElementById("r-date").value;
+
+  if(!dateInput){
+    alert("시간을 선택하세요");
+    return;
+  }
+
+  const date = new Date(dateInput);
+  const min = date.getMinutes();
+
+  if(min % 30 !== 0){
+    alert("30분 단위로만 예약 가능합니다 (00 / 30)");
+    return;
+  }
+
   fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({
@@ -173,7 +247,7 @@ function submitReservation(){
       name:document.getElementById("r-name").value,
       phone:document.getElementById("r-phone").value,
       space:document.getElementById("r-space").value,
-      date:document.getElementById("r-date").value,
+      date:dateInput,
       purpose:document.getElementById("r-purpose").value
     })
   })
@@ -196,7 +270,8 @@ function submitExternal(){
       content:document.getElementById("e-content").value,
       date:document.getElementById("e-date").value
     })
-  }).then(()=>alert("등록 완료"));
+  })
+  .then(()=>alert("등록 완료"));
 }
 </script>
 
