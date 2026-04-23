@@ -1,342 +1,233 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body {
-  font-family: 'Noto Sans KR';
-  background: #f2f4f6;
-  margin: 0;
-}
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: #f5f6f8;
+    }
 
-.container {
-  padding: 20px;
-  max-width: 600px;
-  margin: auto;
-}
+    h1 {
+      text-align: center;
+      padding: 18px;
+      font-size: 22px;
+      background: #2d6cdf;
+      color: white;
+      margin: 0;
+    }
 
-.card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 16px;
-  margin-top: 15px;
-}
+    .page {
+      display: none;
+      padding: 15px;
+    }
 
-.btn {
-  width: 100%;
-  padding: 15px;
-  margin-top: 10px;
-  font-size: 16px;
-  border: 0;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
+    .active {
+      display: block;
+    }
 
-.hidden { display:none; }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin: 6px 0;
+      border: none;
+      border-radius: 10px;
+      background: #2d6cdf;
+      color: white;
+      font-size: 15px;
+    }
 
-.selected {
-  background:#3182f6;
-  color:#fff;
-}
+    .back {
+      background: #777;
+    }
 
-.progress {
-  height: 8px;
-  background: #ddd;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 10px;
-}
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
 
-.bar {
-  height: 100%;
-  width: 0%;
-  background: #3182f6;
-  transition: 0.3s;
-}
+    textarea {
+      height: 80px;
+    }
 
-input, textarea {
-  width: 100%;
-  padding: 10px;
-  margin-top: 8px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-}
-</style>
+    .title {
+      font-weight: bold;
+      margin: 10px 0;
+      font-size: 18px;
+    }
+
+  </style>
 </head>
 
 <body>
-<div class="container">
 
-<h2>남양주시 문화의집</h2>
+<h1>남양주시 문화의집</h1>
 
-<!-- 홈 -->
-<div id="home" class="card">
-  <button class="btn" onclick="go('attendance')">출석체크</button>
-  <button class="btn" onclick="go('reservation')">대관 신청</button>
-  <button class="btn" onclick="go('external')">외부 일정 공유</button>
-  <button class="btn" onclick="go('calendar')">캘린더</button>
+<!-- ================= HOME ================= -->
+<div id="home" class="page active">
+  <button onclick="go('attendance1')">📋 동아리 출석체크</button>
+  <button onclick="go('booking')">🏢 대관신청</button>
+  <button onclick="go('external')">📣 외부활동공유</button>
+  <button onclick="go('calendar')">📅 캘린더</button>
 </div>
 
-<!-- 출석 -->
-<div id="attendance" class="card hidden">
-  <div class="progress">
-    <div class="bar" id="bar"></div>
-  </div>
-
-  <div id="step-area"></div>
-
-  <button class="btn" onclick="submitAttendance()">출석 저장</button>
-  <button class="btn" onclick="resetAll(); go('home')">홈으로</button>
+<!-- ================= 출석 1 ================= -->
+<div id="attendance1" class="page">
+  <div class="title">동아리 선택</div>
+  <div id="clubList"></div>
+  <button class="back" onclick="go('home')">돌아가기</button>
 </div>
 
-<!-- 대관 -->
-<div id="reservation" class="card hidden">
-  <h3>대관 신청</h3>
+<!-- ================= 출석 2 ================= -->
+<div id="attendance2" class="page">
+  <div class="title">이름 선택</div>
+  <div id="memberList"></div>
 
-  <input id="r_name" placeholder="이름">
-  <input id="r_phone" placeholder="연락처">
-  <input id="r_space" placeholder="공간">
-  <input id="r_date" type="datetime-local">
-  <textarea id="r_purpose" placeholder="사용 목적"></textarea>
-
-  <button class="btn" onclick="submitReservation()">신청</button>
-  <button class="btn" onclick="go('home')">뒤로</button>
+  <button onclick="submitAttendance()">출석 제출</button>
+  <button class="back" onclick="go('home')">처음으로</button>
 </div>
 
-<!-- 외부 일정 -->
-<div id="external" class="card hidden">
-  <h3>외부 일정 공유</h3>
+<!-- ================= 대관 ================= -->
+<div id="booking" class="page">
+  <div class="title">대관 신청</div>
 
-  <input id="e_club" placeholder="동아리">
-  <input id="e_writer" placeholder="작성자">
-  <input id="e_title" placeholder="제목">
-  <input id="e_date" type="datetime-local">
-  <textarea id="e_content" placeholder="내용"></textarea>
+  <input id="b_name" placeholder="이름">
+  <input id="b_phone" placeholder="전화번호">
+  <input id="b_space" placeholder="대관공간">
+  <textarea id="b_content" placeholder="대관내용"></textarea>
 
-  <button class="btn" onclick="submitExternal()">등록</button>
-  <button class="btn" onclick="go('home')">뒤로</button>
+  <label>대관일시</label>
+  <input id="b_datetime" type="datetime-local">
+
+  <label>이용시간</label>
+  <select id="b_hours">
+    <option value="1">1시간</option>
+    <option value="2">2시간</option>
+    <option value="3">3시간</option>
+    <option value="4">4시간</option>
+  </select>
+
+  <button onclick="submitBooking()">제출</button>
+  <button class="back" onclick="go('home')">돌아가기</button>
 </div>
 
-<!-- 캘린더 -->
-<div id="calendar" class="card hidden">
-  <iframe 
-    src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse@gmail.com&ctz=Asia%2FSeoul"
-    style="width:100%; height:500px; border:0;">
+<!-- ================= 외부활동 ================= -->
+<div id="external" class="page">
+  <div class="title">외부활동 공유</div>
+
+  <input id="e_club" placeholder="동아리명">
+  <input id="e_phone" placeholder="전화번호">
+  <input id="e_event" placeholder="행사명">
+  <textarea id="e_content" placeholder="활동내용"></textarea>
+
+  <label>활동일시</label>
+  <input id="e_datetime" type="datetime-local">
+
+  <button onclick="submitExternal()">제출</button>
+  <button class="back" onclick="go('home')">돌아가기</button>
+</div>
+
+<!-- ================= 캘린더 ================= -->
+<div id="calendar" class="page">
+  <div class="title">캘린더</div>
+
+  <iframe
+    src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse%40gmail.com&ctz=Asia%2FSeoul"
+    style="border:0; width:100%; height:500px;">
   </iframe>
-  <button class="btn" onclick="go('home')">뒤로</button>
+
+  <button class="back" onclick="go('home')">돌아가기</button>
 </div>
 
-</div>
-
+<!-- ================= SCRIPT ================= -->
 <script>
-const API_URL = "YOUR_WEBAPP_URL";
 
-let state = {
-  step: 1,
-  day: "",
-  club: "",
-  members: []
-};
+let selectedClub = "";
+let selectedMember = "";
 
-/* ---------------------------
-   화면 전환
-----------------------------*/
-function go(id){
-  document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
+/* ================= 페이지 이동 ================= */
+function go(page){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
 
-  if(id === "attendance"){
-    renderDays();
-  }
+  if(page === "attendance1") loadClubs();
 }
 
-/* ---------------------------
-   출석 진행바
-----------------------------*/
-function updateBar(){
-  document.getElementById("bar").style.width = (state.step / 3 * 100) + "%";
-}
-
-/* ---------------------------
-   초기화
-----------------------------*/
-function resetAll(){
-  state = { step:1, day:"", club:"", members:[] };
-}
-
-/* ---------------------------
-   STEP 1
-----------------------------*/
-function renderDays(){
-  state.step = 1;
-  updateBar();
-
-  const el = document.getElementById("step-area");
-  el.innerHTML = "<h3>1. 요일 선택</h3>";
-
-  ["화","수","목","금","토","일"].forEach(d=>{
-    const b = document.createElement("button");
-    b.className = "btn";
-    b.innerText = d + "요일";
-
-    b.onclick = ()=>{
-      state.day = d;
-      loadClubs(d);
-    };
-
-    el.appendChild(b);
-  });
-}
-
-/* ---------------------------
-   STEP 2
-----------------------------*/
-function loadClubs(day){
-  state.step = 2;
-  updateBar();
-
-  fetch(API_URL,{
-    method:"POST",
-    headers: { "Content-Type":"application/json" },
-    body:JSON.stringify({type:"getClubs", day})
-  })
-  .then(r=>r.json())
-  .then(data=>{
-    const el = document.getElementById("step-area");
-    el.innerHTML = "<h3>2. 동아리 선택</h3>";
-
-    (data.clubs || []).forEach(c=>{
-      const b = document.createElement("button");
-      b.className = "btn";
-      b.innerText = c;
-
-      b.onclick = ()=>{
-        state.club = c;
-        loadMembers(c);
-      };
-
-      el.appendChild(b);
+/* ================= 동아리 로딩 ================= */
+function loadClubs(){
+  google.script.run.withSuccessHandler(data=>{
+    let html = "";
+    data.forEach(c=>{
+      html += `<button onclick="selectClub('${c}')">${c}</button>`;
     });
-  });
+    document.getElementById("clubList").innerHTML = html;
+  }).getClubs();
 }
 
-/* ---------------------------
-   STEP 3
-----------------------------*/
-function loadMembers(club){
-  state.step = 3;
-  updateBar();
-  state.members = [];
+/* ================= 동아리 선택 ================= */
+function selectClub(club){
+  selectedClub = club;
+  go("attendance2");
 
-  fetch(API_URL,{
-    method:"POST",
-    headers: { "Content-Type":"application/json" },
-    body:JSON.stringify({type:"getMembers", club})
-  })
-  .then(r=>r.json())
-  .then(data=>{
-    const el = document.getElementById("step-area");
-    el.innerHTML = "<h3>3. 이름 선택</h3>";
-
-    (data.members || []).forEach(m=>{
-      const b = document.createElement("button");
-      b.className = "btn";
-      b.innerText = m;
-
-      b.onclick = ()=>{
-        const i = state.members.indexOf(m);
-        if(i>-1){
-          state.members.splice(i,1);
-          b.classList.remove("selected");
-        }else{
-          state.members.push(m);
-          b.classList.add("selected");
-        }
-      };
-
-      el.appendChild(b);
+  google.script.run.withSuccessHandler(data=>{
+    let html = "";
+    data.forEach(m=>{
+      html += `<button onclick="selectMember('${m}')">${m}</button>`;
     });
-  });
+    document.getElementById("memberList").innerHTML = html;
+  }).getMembers(club);
 }
 
-/* ---------------------------
-   출석 저장
-----------------------------*/
+/* ================= 이름 선택 ================= */
+function selectMember(name){
+  selectedMember = name;
+  alert("선택됨: " + selectedClub + " / " + selectedMember);
+}
+
+/* ================= 출석 제출 ================= */
 function submitAttendance(){
-  if(!state.club || state.members.length===0){
-    alert("선택 안됨");
-    return;
-  }
-
-  fetch(API_URL,{
-    method:"POST",
-    headers: { "Content-Type":"application/json" },
-    body:JSON.stringify({
-      type:"attendance",
-      club: state.club,
-      members: state.members.join(",")
-    })
-  })
-  .then(()=> {
+  google.script.run.withSuccessHandler(()=>{
     alert("출석 완료");
-    resetAll();
     go("home");
+  }).saveAttendance(selectedClub, selectedMember, new Date().toLocaleDateString());
+}
+
+/* ================= 대관 ================= */
+function submitBooking(){
+  google.script.run.withSuccessHandler(()=>{
+    alert("대관 등록 완료");
+    go("home");
+  }).submitBooking({
+    name: b_name.value,
+    phone: b_phone.value,
+    space: b_space.value,
+    content: b_content.value,
+    dateTime: b_datetime.value,
+    hours: b_hours.value
   });
 }
 
-/* ---------------------------
-   대관 신청
-----------------------------*/
-function submitReservation(){
-  fetch(API_URL,{
-    method:"POST",
-    headers: { "Content-Type":"application/json" },
-    body:JSON.stringify({
-      type:"reservation",
-      name: r_name.value,
-      phone: r_phone.value,
-      space: r_space.value,
-      date: r_date.value,
-      purpose: r_purpose.value
-    })
-  })
-  .then(r=>r.json())
-  .then(res=>{
-    if(res.error) alert(res.error);
-    else {
-      alert("신청 완료");
-      go("home");
-    }
-  });
-}
-
-/* ---------------------------
-   외부 일정
-----------------------------*/
+/* ================= 외부활동 ================= */
 function submitExternal(){
-  fetch(API_URL,{
-    method:"POST",
-    headers: { "Content-Type":"application/json" },
-    body:JSON.stringify({
-      type:"external",
-      club: e_club.value,
-      writer: e_writer.value,
-      title: e_title.value,
-      content: e_content.value,
-      date: e_date.value
-    })
-  })
-  .then(r=>r.json())
-  .then(res=>{
-    if(res.error) alert(res.error);
-    else {
-      alert("등록 완료");
-      go("home");
-    }
+  google.script.run.withSuccessHandler(()=>{
+    alert("등록 완료");
+    go("home");
+  }).submitExternal({
+    club: e_club.value,
+    phone: e_phone.value,
+    event: e_event.value,
+    content: e_content.value,
+    dateTime: e_datetime.value
   });
 }
+
 </script>
 
 </body>
