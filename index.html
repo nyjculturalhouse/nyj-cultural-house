@@ -12,6 +12,7 @@ body {font-family:'Noto Sans KR'; background:#f2f4f6; margin:0;}
 .selected {background:#3182f6; color:#fff;}
 .small {font-size:13px; color:#666;}
 input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
+h2 {text-align:center;}
 </style>
 </head>
 
@@ -55,7 +56,7 @@ input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
   <button class="btn" onclick="go('home')">뒤로</button>
 </div>
 
-<!-- 외부 -->
+<!-- 외부 일정 -->
 <div id="external" class="card hidden">
   <h3>외부 일정 공유</h3>
 
@@ -87,7 +88,7 @@ input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
 const API_URL = "https://script.google.com/macros/s/AKfycbyO4MEH9YOoEgNoeWmfMwuWKiFTbBhcXAbFYub3ktusOmZxe1kng0hlFpKNmWrMV-wRvw/exec";
 
 /* =========================
-   상태 (핵심)
+   상태
 ========================= */
 let state = {
   day: "",
@@ -106,7 +107,7 @@ function go(id){
 }
 
 /* =========================
-   상태 초기화
+   초기화
 ========================= */
 function resetAttendance(){
   state = { day:"", club:"", members:[] };
@@ -126,7 +127,7 @@ function updateStatus(){
 }
 
 /* =========================
-   STEP 1 - 요일
+   1️⃣ 요일
 ========================= */
 function renderDays(){
   const days = ["화","수","목","금","토","일"];
@@ -137,7 +138,7 @@ function renderDays(){
   days.forEach(d=>{
     const b = document.createElement("button");
     b.className = "btn";
-    b.innerText = "📅 " + d;
+    b.innerText = d + "요일";
 
     b.onclick = () => {
       state.day = d;
@@ -156,7 +157,7 @@ function renderDays(){
 }
 
 /* =========================
-   STEP 2 - 동아리
+   2️⃣ 동아리
 ========================= */
 function renderClubs(day){
   fetch(API_URL,{
@@ -172,7 +173,7 @@ function renderClubs(day){
     data.clubs.forEach(c=>{
       const b = document.createElement("button");
       b.className = "btn";
-      b.innerText = "🏷 " + c;
+      b.innerText = c;
 
       b.onclick = () => {
         state.club = c;
@@ -190,7 +191,7 @@ function renderClubs(day){
 }
 
 /* =========================
-   STEP 3 - 이름
+   3️⃣ 이름
 ========================= */
 function renderMembers(club){
   fetch(API_URL,{
@@ -206,7 +207,7 @@ function renderMembers(club){
     data.members.forEach(m=>{
       const b = document.createElement("button");
       b.className = "btn";
-      b.innerText = "👤 " + m;
+      b.innerText = m;
 
       b.onclick = () => {
         const i = state.members.indexOf(m);
@@ -228,7 +229,7 @@ function renderMembers(club){
 }
 
 /* =========================
-   STEP 초기화 (핵심)
+   step 초기화
 ========================= */
 function clearStep(step){
   document.getElementById("step-" + step).innerHTML = "";
@@ -262,6 +263,40 @@ function submitAttendance(){
       go("home");
     }
   });
+}
+
+/* =========================
+   대관
+========================= */
+function submitReservation(){
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      type:"reservation",
+      name:document.getElementById("r-name").value,
+      phone:document.getElementById("r-phone").value,
+      space:document.getElementById("r-space").value,
+      date:document.getElementById("r-date").value,
+      purpose:document.getElementById("r-purpose").value
+    })
+  }).then(()=>alert("신청 완료"));
+}
+
+/* =========================
+   외부 일정
+========================= */
+function submitExternal(){
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      type:"external",
+      club:document.getElementById("e-club").value,
+      writer:document.getElementById("e-writer").value,
+      title:document.getElementById("e-title").value,
+      date:document.getElementById("e-date").value,
+      content:document.getElementById("e-content").value
+    })
+  }).then(()=>alert("등록 완료"));
 }
 </script>
 
