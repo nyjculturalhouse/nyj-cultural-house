@@ -30,15 +30,16 @@ input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
 
 <!-- 출석 -->
 <div id="attendance" class="card hidden">
-  <h3>출석체크</h3>
 
+  <h3>출석체크</h3>
   <div id="status" class="small"></div>
+
   <div id="days"></div>
   <div id="clubs"></div>
   <div id="members"></div>
 
   <button class="btn" onclick="submitAttendance()">출석 저장</button>
-  <button class="btn" onclick="go('home')">뒤로</button>
+  <button class="btn" onclick="go('home'); resetAll()">뒤로</button>
 </div>
 
 <!-- 대관 -->
@@ -48,17 +49,14 @@ input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
   <input id="r-name" placeholder="이름">
   <input id="r-phone" placeholder="연락처">
   <input id="r-space" placeholder="공간">
-
-  <!-- 🔥 30분 단위 -->
   <input id="r-date" type="datetime-local" step="1800">
-
   <input id="r-purpose" placeholder="목적">
 
   <button class="btn" onclick="submitReservation()">신청</button>
   <button class="btn" onclick="go('home')">뒤로</button>
 </div>
 
-<!-- 외부 일정 -->
+<!-- 외부 -->
 <div id="external" class="card hidden">
   <h3>외부 일정 공유</h3>
 
@@ -89,12 +87,16 @@ input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyO4MEH9YOoEgNoeWmfMwuWKiFTbBhcXAbFYub3ktusOmZxe1kng0hlFpKNmWrMV-wRvw/exec";
 
-/******** 상태 관리 ********/
+/* ======================
+   상태 관리
+====================== */
 let selectedDay = "";
 let selectedClub = "";
 let selectedMembers = [];
 
-/******** 화면 이동 ********/
+/* ======================
+   화면 이동
+====================== */
 function go(id){
   document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
@@ -102,13 +104,31 @@ function go(id){
   if(id==="attendance") loadDays();
 }
 
-/******** 상태 표시 ********/
-function updateStatus(){
-  document.getElementById("status").innerText =
-    `선택 → ${selectedDay || "-"} / ${selectedClub || "-"} / 인원 ${selectedMembers.length}`;
+/* ======================
+   전체 초기화
+====================== */
+function resetAll(){
+  selectedDay = "";
+  selectedClub = "";
+  selectedMembers = [];
+
+  document.getElementById("days").innerHTML = "";
+  document.getElementById("clubs").innerHTML = "";
+  document.getElementById("members").innerHTML = "";
+  document.getElementById("status").innerText = "";
 }
 
-/******** 요일 ********/
+/* ======================
+   상태 표시
+====================== */
+function updateStatus(){
+  document.getElementById("status").innerText =
+    `📅 ${selectedDay || "-"} → 🏷 ${selectedClub || "-"} → 👤 ${selectedMembers.length}명`;
+}
+
+/* ======================
+   1단계: 요일
+====================== */
 function loadDays(){
   const days=["화","수","목","금","토","일"];
   const el=document.getElementById("days");
@@ -124,6 +144,10 @@ function loadDays(){
       selectedDay = d;
       selectedClub = "";
       selectedMembers = [];
+
+      document.getElementById("clubs").innerHTML = "";
+      document.getElementById("members").innerHTML = "";
+
       loadClubs(d);
       updateStatus();
     };
@@ -132,7 +156,9 @@ function loadDays(){
   });
 }
 
-/******** 동아리 ********/
+/* ======================
+   2단계: 동아리
+====================== */
 function loadClubs(day){
   fetch(API_URL,{
     method:"POST",
@@ -152,6 +178,9 @@ function loadClubs(day){
       b.onclick=()=>{
         selectedClub = c;
         selectedMembers = [];
+
+        document.getElementById("members").innerHTML = "";
+
         loadMembers(c);
         updateStatus();
       };
@@ -161,7 +190,9 @@ function loadClubs(day){
   });
 }
 
-/******** 멤버 ********/
+/* ======================
+   3단계: 이름
+====================== */
 function loadMembers(club){
   fetch(API_URL,{
     method:"POST",
@@ -193,7 +224,9 @@ function loadMembers(club){
   });
 }
 
-/******** 출석 ********/
+/* ======================
+   출석 저장
+====================== */
 function submitAttendance(){
 
   if(!selectedClub){
@@ -211,18 +244,20 @@ function submitAttendance(){
   })
   .then(r=>r.json())
   .then(res=>{
-    if(res.error) alert(res.error);
-    else {
+    if(res.error){
+      alert(res.error);
+    } else {
       alert("출석 완료");
-      selectedDay = "";
-      selectedClub = "";
-      selectedMembers = [];
-      updateStatus();
+
+      resetAll();
+      go("home");
     }
   });
 }
 
-/******** 대관 (30분 제한) ********/
+/* ======================
+   대관 (30분 제한)
+====================== */
 function submitReservation(){
 
   const dateInput = document.getElementById("r-date").value;
@@ -233,10 +268,9 @@ function submitReservation(){
   }
 
   const date = new Date(dateInput);
-  const min = date.getMinutes();
 
-  if(min % 30 !== 0){
-    alert("30분 단위로만 예약 가능합니다 (00 / 30)");
+  if(date.getMinutes() % 30 !== 0){
+    alert("30분 단위만 가능합니다 (00 / 30)");
     return;
   }
 
@@ -254,11 +288,16 @@ function submitReservation(){
   .then(r=>r.json())
   .then(res=>{
     if(res.error) alert(res.error);
-    else alert("신청 완료");
+    else {
+      alert("신청 완료");
+      go("home");
+    }
   });
 }
 
-/******** 외부 일정 ********/
+/* ======================
+   외부 일정
+====================== */
 function submitExternal(){
   fetch(API_URL,{
     method:"POST",
@@ -271,7 +310,14 @@ function submitExternal(){
       date:document.getElementById("e-date").value
     })
   })
-  .then(()=>alert("등록 완료"));
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.error) alert(res.error);
+    else {
+      alert("등록 완료");
+      go("home");
+    }
+  });
 }
 </script>
 
