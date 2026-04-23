@@ -1,43 +1,169 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=2.2, maximum-scale=3.0">
+
+<style>
+body {font-family: 'Noto Sans KR', sans-serif; background:#f2f4f6; margin:0;}
+.container {padding:24px;}
+.card {background:white; border-radius:24px; padding:32px; margin-top:20px;}
+.btn {width:100%; padding:24px; font-size:22px; margin-top:10px;}
+.selected {background:#3182f6; color:white;}
+.hidden {display:none;}
+</style>
 </head>
 
 <body>
+<div class="container">
 
-<h2>남양주시 문화의집</h2>
+<h2>남양주시 문화의집 출석부</h2>
 
-<h3>출석 테스트</h3>
+<div id="step-home" class="card">
+  <button class="btn" onclick="showStep('step-days')">출석 시작</button>
+</div>
 
-<input id="club" placeholder="동아리명">
-<textarea id="members" placeholder="출석자 (쉼표로 구분)"></textarea>
+<div id="step-days" class="card hidden">
+  <h3>요일 선택</h3>
+  <div id="day-buttons"></div>
+</div>
 
-<button onclick="sendAttendance()">출석 저장</button>
+<div id="step-clubs" class="card hidden">
+  <h3>동아리 선택</h3>
+  <div id="club-buttons"></div>
+</div>
+
+<div id="step-members" class="card hidden">
+  <h3 id="club-title"></h3>
+  <div id="member-list"></div>
+  <button class="btn" onclick="submitAttendance()">출석 제출</button>
+</div>
+
+</div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyO4MEH9YOoEgNoeWmfMwuWKiFTbBhcXAbFYub3ktusOmZxe1kng0hlFpKNmWrMV-wRvw/exec";
 
-function sendAttendance(){
-  fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      type: "attendance",
-      club: document.getElementById("club").value,
-      members: document.getElementById("members").value
+let selectedDay="", selectedClub="", selectedMembers=[];
+
+/*************************************************
+ * 화면 전환
+ *************************************************/
+function showStep(id){
+  document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+
+  if(id==="step-days"){
+    loadDays();
+  }
+}
+
+/*************************************************
+ * 요일
+ *************************************************/
+function loadDays(){
+  const days=["화","수","목","금","토","일"];
+  const el=document.getElementById("day-buttons");
+  el.innerHTML="";
+
+  days.forEach(day=>{
+    const btn=document.createElement("button");
+    btn.className="btn";
+    btn.innerText=day+"요일";
+
+    btn.onclick=()=>{
+      selectedDay=day;
+      loadClubs(day);
+    };
+
+    el.appendChild(btn);
+  });
+}
+
+/*************************************************
+ * 동아리 불러오기
+ *************************************************/
+function loadClubs(day){
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({type:"getClubs", day:day})
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    const el=document.getElementById("club-buttons");
+    el.innerHTML="";
+
+    data.clubs.forEach(club=>{
+      const btn=document.createElement("button");
+      btn.className="btn";
+      btn.innerText=club;
+
+      btn.onclick=()=>{
+        selectedClub=club;
+        loadMembers(club);
+      };
+
+      el.appendChild(btn);
+    });
+
+    showStep("step-clubs");
+  });
+}
+
+/*************************************************
+ * 멤버 불러오기
+ *************************************************/
+function loadMembers(club){
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({type:"getMembers", club:club})
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    const el=document.getElementById("member-list");
+    el.innerHTML="";
+    selectedMembers=[];
+
+    document.getElementById("club-title").innerText=club;
+
+    data.members.forEach(name=>{
+      const btn=document.createElement("button");
+      btn.className="btn";
+      btn.innerText=name;
+
+      btn.onclick=function(){
+        this.classList.toggle("selected");
+        const i=selectedMembers.indexOf(name);
+        i>-1 ? selectedMembers.splice(i,1) : selectedMembers.push(name);
+      };
+
+      el.appendChild(btn);
+    });
+
+    showStep("step-members");
+  });
+}
+
+/*************************************************
+ * 출석 제출
+ *************************************************/
+function submitAttendance(){
+  if(selectedMembers.length===0){
+    alert("출석 인원 선택");
+    return;
+  }
+
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      type:"attendance",
+      club:selectedClub,
+      members:selectedMembers.join(",")
     })
   })
-  .then(res => res.json())
-  .then(res => {
-    if(res.error){
-      alert("오류: " + res.error);
-    } else {
-      alert("출석 완료!");
-    }
-  })
-  .catch(err => {
-    alert("연결 실패");
-    console.log(err);
+  .then(res=>res.json())
+  .then(()=>{
+    alert("출석 완료!");
+    showStep("step-home");
   });
 }
 </script>
