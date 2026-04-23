@@ -1,41 +1,74 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=2.2, maximum-scale=3.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {font-family: 'Noto Sans KR', sans-serif; background:#f2f4f6; margin:0;}
-.container {padding:24px;}
-.card {background:white; border-radius:24px; padding:32px; margin-top:20px;}
-.btn {width:100%; padding:24px; font-size:22px; margin-top:10px;}
-.selected {background:#3182f6; color:white;}
+body {font-family:'Noto Sans KR'; background:#f2f4f6; margin:0;}
+.container {padding:20px; max-width:600px; margin:auto;}
+.card {background:#fff; padding:20px; border-radius:16px; margin-top:15px;}
+.btn {width:100%; padding:15px; margin-top:10px; font-size:16px;}
 .hidden {display:none;}
+.selected {background:#3182f6; color:#fff;}
+input {width:100%; padding:12px; margin-top:10px;}
 </style>
 </head>
 
 <body>
 <div class="container">
 
-<h2>남양주시 문화의집 출석부</h2>
+<h2>남양주시 문화의집</h2>
 
-<div id="step-home" class="card">
-  <button class="btn" onclick="showStep('step-days')">출석 시작</button>
+<!-- 홈 -->
+<div id="home" class="card">
+  <button class="btn" onclick="go('attendance')">출석체크</button>
+  <button class="btn" onclick="go('reservation')">대관 신청</button>
+  <button class="btn" onclick="go('external')">외부 일정 공유</button>
+  <button class="btn" onclick="go('calendar')">캘린더</button>
 </div>
 
-<div id="step-days" class="card hidden">
-  <h3>요일 선택</h3>
-  <div id="day-buttons"></div>
+<!-- 출석 -->
+<div id="attendance" class="card hidden">
+  <h3>출석체크</h3>
+  <div id="days"></div>
+  <div id="clubs"></div>
+  <div id="members"></div>
+  <button class="btn" onclick="submitAttendance()">출석 저장</button>
+  <button class="btn" onclick="go('home')">뒤로</button>
 </div>
 
-<div id="step-clubs" class="card hidden">
-  <h3>동아리 선택</h3>
-  <div id="club-buttons"></div>
+<!-- 대관 -->
+<div id="reservation" class="card hidden">
+  <h3>대관 신청</h3>
+  <input id="r-name" placeholder="이름">
+  <input id="r-phone" placeholder="연락처">
+  <input id="r-space" placeholder="공간">
+  <input id="r-date" type="datetime-local">
+  <input id="r-purpose" placeholder="목적">
+  <button class="btn" onclick="submitReservation()">신청</button>
+  <button class="btn" onclick="go('home')">뒤로</button>
 </div>
 
-<div id="step-members" class="card hidden">
-  <h3 id="club-title"></h3>
-  <div id="member-list"></div>
-  <button class="btn" onclick="submitAttendance()">출석 제출</button>
+<!-- 외부 일정 -->
+<div id="external" class="card hidden">
+  <h3>외부 일정 공유</h3>
+  <input id="e-club" placeholder="동아리명">
+  <input id="e-writer" placeholder="작성자">
+  <input id="e-title" placeholder="제목">
+  <input id="e-date" type="datetime-local">
+  <input id="e-content" placeholder="내용">
+  <button class="btn" onclick="submitExternal()">등록</button>
+  <button class="btn" onclick="go('home')">뒤로</button>
+</div>
+
+<!-- 캘린더 -->
+<div id="calendar" class="card hidden">
+  <h3>캘린더</h3>
+  <iframe 
+    src="https://calendar.google.com/calendar/embed?src=primary&ctz=Asia%2FSeoul"
+    style="width:100%; height:500px; border:0;">
+  </iframe>
+  <button class="btn" onclick="go('home')">뒤로</button>
 </div>
 
 </div>
@@ -43,115 +76,84 @@ body {font-family: 'Noto Sans KR', sans-serif; background:#f2f4f6; margin:0;}
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyO4MEH9YOoEgNoeWmfMwuWKiFTbBhcXAbFYub3ktusOmZxe1kng0hlFpKNmWrMV-wRvw/exec";
 
-let selectedDay="", selectedClub="", selectedMembers=[];
+let selectedClub="", selectedMembers=[];
 
-/*************************************************
- * 화면 전환
- *************************************************/
-function showStep(id){
+/******** 화면 전환 ********/
+function go(id){
   document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 
-  if(id==="step-days"){
-    loadDays();
-  }
+  if(id==="attendance") loadDays();
 }
 
-/*************************************************
- * 요일
- *************************************************/
+/******** 요일 ********/
 function loadDays(){
   const days=["화","수","목","금","토","일"];
-  const el=document.getElementById("day-buttons");
+  const el=document.getElementById("days");
   el.innerHTML="";
 
-  days.forEach(day=>{
-    const btn=document.createElement("button");
-    btn.className="btn";
-    btn.innerText=day+"요일";
-
-    btn.onclick=()=>{
-      selectedDay=day;
-      loadClubs(day);
-    };
-
-    el.appendChild(btn);
+  days.forEach(d=>{
+    const b=document.createElement("button");
+    b.className="btn";
+    b.innerText=d+"요일";
+    b.onclick=()=>loadClubs(d);
+    el.appendChild(b);
   });
 }
 
-/*************************************************
- * 동아리 불러오기
- *************************************************/
+/******** 동아리 ********/
 function loadClubs(day){
   fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({type:"getClubs", day:day})
   })
-  .then(res=>res.json())
+  .then(r=>r.json())
   .then(data=>{
-    const el=document.getElementById("club-buttons");
+    const el=document.getElementById("clubs");
     el.innerHTML="";
 
-    data.clubs.forEach(club=>{
-      const btn=document.createElement("button");
-      btn.className="btn";
-      btn.innerText=club;
-
-      btn.onclick=()=>{
-        selectedClub=club;
-        loadMembers(club);
-      };
-
-      el.appendChild(btn);
+    data.clubs.forEach(c=>{
+      const b=document.createElement("button");
+      b.className="btn";
+      b.innerText=c;
+      b.onclick=()=>loadMembers(c);
+      el.appendChild(b);
     });
-
-    showStep("step-clubs");
   });
 }
 
-/*************************************************
- * 멤버 불러오기
- *************************************************/
+/******** 멤버 ********/
 function loadMembers(club){
+  selectedClub=club;
+  selectedMembers=[];
+
   fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({type:"getMembers", club:club})
   })
-  .then(res=>res.json())
+  .then(r=>r.json())
   .then(data=>{
-    const el=document.getElementById("member-list");
+    const el=document.getElementById("members");
     el.innerHTML="";
-    selectedMembers=[];
 
-    document.getElementById("club-title").innerText=club;
+    data.members.forEach(m=>{
+      const b=document.createElement("button");
+      b.className="btn";
+      b.innerText=m;
 
-    data.members.forEach(name=>{
-      const btn=document.createElement("button");
-      btn.className="btn";
-      btn.innerText=name;
-
-      btn.onclick=function(){
+      b.onclick=function(){
         this.classList.toggle("selected");
-        const i=selectedMembers.indexOf(name);
-        i>-1 ? selectedMembers.splice(i,1) : selectedMembers.push(name);
+        const i=selectedMembers.indexOf(m);
+        i>-1 ? selectedMembers.splice(i,1) : selectedMembers.push(m);
       };
 
-      el.appendChild(btn);
+      el.appendChild(b);
     });
-
-    showStep("step-members");
   });
 }
 
-/*************************************************
- * 출석 제출
- *************************************************/
+/******** 출석 ********/
 function submitAttendance(){
-  if(selectedMembers.length===0){
-    alert("출석 인원 선택");
-    return;
-  }
-
   fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({
@@ -159,12 +161,42 @@ function submitAttendance(){
       club:selectedClub,
       members:selectedMembers.join(",")
     })
+  }).then(()=>alert("출석 완료"));
+}
+
+/******** 대관 ********/
+function submitReservation(){
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      type:"reservation",
+      name:document.getElementById("r-name").value,
+      phone:document.getElementById("r-phone").value,
+      space:document.getElementById("r-space").value,
+      date:document.getElementById("r-date").value,
+      purpose:document.getElementById("r-purpose").value
+    })
   })
-  .then(res=>res.json())
-  .then(()=>{
-    alert("출석 완료!");
-    showStep("step-home");
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.error) alert(res.error);
+    else alert("신청 완료");
   });
+}
+
+/******** 외부 일정 ********/
+function submitExternal(){
+  fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      type:"external",
+      club:document.getElementById("e-club").value,
+      writer:document.getElementById("e-writer").value,
+      title:document.getElementById("e-title").value,
+      content:document.getElementById("e-content").value,
+      date:document.getElementById("e-date").value
+    })
+  }).then(()=>alert("등록 완료"));
 }
 </script>
 
