@@ -10,8 +10,8 @@ body {font-family:'Noto Sans KR'; background:#f2f4f6; margin:0;}
 .btn {width:100%; padding:15px; margin-top:10px; font-size:16px; border:0; border-radius:10px;}
 .hidden {display:none;}
 .selected {background:#3182f6; color:#fff;}
-input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
 .small {font-size:13px; color:#666;}
+input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
 </style>
 </head>
 
@@ -30,16 +30,15 @@ input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
 
 <!-- 출석 -->
 <div id="attendance" class="card hidden">
-
   <h3>출석체크</h3>
   <div id="status" class="small"></div>
 
-  <div id="days"></div>
-  <div id="clubs"></div>
-  <div id="members"></div>
+  <div id="step-days"></div>
+  <div id="step-clubs"></div>
+  <div id="step-members"></div>
 
   <button class="btn" onclick="submitAttendance()">출석 저장</button>
-  <button class="btn" onclick="go('home'); resetAll()">뒤로</button>
+  <button class="btn" onclick="go('home'); resetAttendance()">뒤로</button>
 </div>
 
 <!-- 대관 -->
@@ -75,7 +74,7 @@ input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
   <h3>캘린더</h3>
 
   <iframe 
-    src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse@gmail.com&ctz=Asia%2FSeoul?v=2"
+    src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse@gmail.com&ctz=Asia%2FSeoul"
     style="width:100%; height:500px; border:0;">
   </iframe>
 
@@ -87,68 +86,68 @@ input {width:100%; padding:12px; margin-top:10px; box-sizing:border-box;}
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyO4MEH9YOoEgNoeWmfMwuWKiFTbBhcXAbFYub3ktusOmZxe1kng0hlFpKNmWrMV-wRvw/exec";
 
-/* ======================
-   상태 관리
-====================== */
-let selectedDay = "";
-let selectedClub = "";
-let selectedMembers = [];
+/* =========================
+   상태 (핵심)
+========================= */
+let state = {
+  day: "",
+  club: "",
+  members: []
+};
 
-/* ======================
+/* =========================
    화면 이동
-====================== */
+========================= */
 function go(id){
   document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 
-  if(id==="attendance") loadDays();
+  if(id === "attendance") renderDays();
 }
 
-/* ======================
-   전체 초기화
-====================== */
-function resetAll(){
-  selectedDay = "";
-  selectedClub = "";
-  selectedMembers = [];
+/* =========================
+   상태 초기화
+========================= */
+function resetAttendance(){
+  state = { day:"", club:"", members:[] };
 
-  document.getElementById("days").innerHTML = "";
-  document.getElementById("clubs").innerHTML = "";
-  document.getElementById("members").innerHTML = "";
+  document.getElementById("step-days").innerHTML = "";
+  document.getElementById("step-clubs").innerHTML = "";
+  document.getElementById("step-members").innerHTML = "";
   document.getElementById("status").innerText = "";
 }
 
-/* ======================
+/* =========================
    상태 표시
-====================== */
+========================= */
 function updateStatus(){
   document.getElementById("status").innerText =
-    `📅 ${selectedDay || "-"} → 🏷 ${selectedClub || "-"} → 👤 ${selectedMembers.length}명`;
+    `📅 ${state.day || "-"} → 🏷 ${state.club || "-"} → 👤 ${state.members.length}명`;
 }
 
-/* ======================
-   1단계: 요일
-====================== */
-function loadDays(){
-  const days=["화","수","목","금","토","일"];
-  const el=document.getElementById("days");
+/* =========================
+   STEP 1 - 요일
+========================= */
+function renderDays(){
+  const days = ["화","수","목","금","토","일"];
+  const el = document.getElementById("step-days");
 
-  el.innerHTML="<p class='small'>1️⃣ 요일 선택</p>";
+  el.innerHTML = "<p class='small'>1️⃣ 요일 선택</p>";
 
   days.forEach(d=>{
-    const b=document.createElement("button");
-    b.className="btn";
-    b.innerText="📅 " + d + "요일";
+    const b = document.createElement("button");
+    b.className = "btn";
+    b.innerText = "📅 " + d;
 
-    b.onclick=()=>{
-      selectedDay = d;
-      selectedClub = "";
-      selectedMembers = [];
+    b.onclick = () => {
+      state.day = d;
+      state.club = "";
+      state.members = [];
 
-      document.getElementById("clubs").innerHTML = "";
-      document.getElementById("members").innerHTML = "";
+      clearStep("clubs");
+      clearStep("members");
 
-      loadClubs(d);
+      renderClubs(d);
       updateStatus();
     };
 
@@ -156,32 +155,32 @@ function loadDays(){
   });
 }
 
-/* ======================
-   2단계: 동아리
-====================== */
-function loadClubs(day){
+/* =========================
+   STEP 2 - 동아리
+========================= */
+function renderClubs(day){
   fetch(API_URL,{
     method:"POST",
-    body:JSON.stringify({type:"getClubs", day:day})
+    body:JSON.stringify({type:"getClubs", day})
   })
   .then(r=>r.json())
   .then(data=>{
-    const el=document.getElementById("clubs");
+    const el = document.getElementById("step-clubs");
 
-    el.innerHTML="<p class='small'>2️⃣ 동아리 선택</p>";
+    el.innerHTML = "<p class='small'>2️⃣ 동아리 선택</p>";
 
     data.clubs.forEach(c=>{
-      const b=document.createElement("button");
-      b.className="btn";
-      b.innerText="🏷 " + c;
+      const b = document.createElement("button");
+      b.className = "btn";
+      b.innerText = "🏷 " + c;
 
-      b.onclick=()=>{
-        selectedClub = c;
-        selectedMembers = [];
+      b.onclick = () => {
+        state.club = c;
+        state.members = [];
 
-        document.getElementById("members").innerHTML = "";
+        clearStep("members");
 
-        loadMembers(c);
+        renderMembers(c);
         updateStatus();
       };
 
@@ -190,31 +189,35 @@ function loadClubs(day){
   });
 }
 
-/* ======================
-   3단계: 이름
-====================== */
-function loadMembers(club){
+/* =========================
+   STEP 3 - 이름
+========================= */
+function renderMembers(club){
   fetch(API_URL,{
     method:"POST",
-    body:JSON.stringify({type:"getMembers", club:club})
+    body:JSON.stringify({type:"getMembers", club})
   })
   .then(r=>r.json())
   .then(data=>{
-    const el=document.getElementById("members");
+    const el = document.getElementById("step-members");
 
-    el.innerHTML="<p class='small'>3️⃣ 이름 선택</p>";
+    el.innerHTML = "<p class='small'>3️⃣ 이름 선택</p>";
 
     data.members.forEach(m=>{
-      const b=document.createElement("button");
-      b.className="btn";
-      b.innerText="👤 " + m;
+      const b = document.createElement("button");
+      b.className = "btn";
+      b.innerText = "👤 " + m;
 
-      b.onclick=function(){
-        this.classList.toggle("selected");
+      b.onclick = () => {
+        const i = state.members.indexOf(m);
 
-        const i = selectedMembers.indexOf(m);
-        if(i>-1) selectedMembers.splice(i,1);
-        else selectedMembers.push(m);
+        if(i > -1){
+          state.members.splice(i,1);
+          b.classList.remove("selected");
+        }else{
+          state.members.push(m);
+          b.classList.add("selected");
+        }
 
         updateStatus();
       };
@@ -224,12 +227,19 @@ function loadMembers(club){
   });
 }
 
-/* ======================
+/* =========================
+   STEP 초기화 (핵심)
+========================= */
+function clearStep(step){
+  document.getElementById("step-" + step).innerHTML = "";
+}
+
+/* =========================
    출석 저장
-====================== */
+========================= */
 function submitAttendance(){
 
-  if(!selectedClub){
+  if(!state.club){
     alert("동아리를 선택하세요");
     return;
   }
@@ -238,83 +248,17 @@ function submitAttendance(){
     method:"POST",
     body:JSON.stringify({
       type:"attendance",
-      club:selectedClub,
-      members:selectedMembers.join(",")
+      club: state.club,
+      members: state.members.join(",")
     })
   })
   .then(r=>r.json())
   .then(res=>{
     if(res.error){
       alert(res.error);
-    } else {
+    }else{
       alert("출석 완료");
-
-      resetAll();
-      go("home");
-    }
-  });
-}
-
-/* ======================
-   대관 (30분 제한)
-====================== */
-function submitReservation(){
-
-  const dateInput = document.getElementById("r-date").value;
-
-  if(!dateInput){
-    alert("시간을 선택하세요");
-    return;
-  }
-
-  const date = new Date(dateInput);
-
-  if(date.getMinutes() % 30 !== 0){
-    alert("30분 단위만 가능합니다 (00 / 30)");
-    return;
-  }
-
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      type:"reservation",
-      name:document.getElementById("r-name").value,
-      phone:document.getElementById("r-phone").value,
-      space:document.getElementById("r-space").value,
-      date:dateInput,
-      purpose:document.getElementById("r-purpose").value
-    })
-  })
-  .then(r=>r.json())
-  .then(res=>{
-    if(res.error) alert(res.error);
-    else {
-      alert("신청 완료");
-      go("home");
-    }
-  });
-}
-
-/* ======================
-   외부 일정
-====================== */
-function submitExternal(){
-  fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      type:"external",
-      club:document.getElementById("e-club").value,
-      writer:document.getElementById("e-writer").value,
-      title:document.getElementById("e-title").value,
-      content:document.getElementById("e-content").value,
-      date:document.getElementById("e-date").value
-    })
-  })
-  .then(r=>r.json())
-  .then(res=>{
-    if(res.error) alert(res.error);
-    else {
-      alert("등록 완료");
+      resetAttendance();
       go("home");
     }
   });
