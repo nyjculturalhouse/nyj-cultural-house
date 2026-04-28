@@ -1,193 +1,183 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>남양주시 문화의집</title>
-    <style>
-        :root { --blue: #3182f6; --bg: #f2f4f6; --gray: #f9fafb; --danger: #ff4d4f; }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 0; }
-        .header { background: var(--blue); color: white; text-align: center; padding: 20px; font-weight: bold; }
-        .container { max-width: 500px; margin: auto; padding: 15px; }
-        .card { background: white; padding: 25px; border-radius: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .btn { width: 100%; padding: 18px; margin-top: 12px; border: none; border-radius: 16px; font-size: 16px; cursor: pointer; background: var(--gray); transition: 0.2s; }
-        .primary { background: var(--blue); color: white; font-weight: bold; }
-        .danger { background: var(--danger); color: white; }
-        .selected { background: var(--blue) !important; color: white !important; }
-        .hidden { display: none; }
-        input, select { width: 100%; padding: 15px; margin-top: 10px; border: 1px solid #ddd; border-radius: 12px; box-sizing: border-box; }
-        iframe { width: 100%; height: 500px; border: none; border-radius: 15px; }
-        .loading { text-align: center; color: var(--blue); padding: 20px; font-weight: bold; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #f2f4f6; margin: 0; padding: 0; color: #191f28; }
+    .container { max-width: 500px; margin: auto; padding: 20px; }
+    .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .btn { width: 100%; padding: 20px; margin-top: 12px; border: none; border-radius: 16px; font-size: 18px; cursor: pointer; background: #f9fafb; font-weight: 500; }
+    .primary { background: #3182f6; color: white; font-weight: bold; }
+    .danger { background: #ff4d4f; color: white; }
+    .selected { background: #3182f6 !important; color: white !important; }
+    .hidden { display: none; }
+    input, select { width: 100%; padding: 15px; margin-top: 10px; border: 1px solid #e5e8eb; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
+    h3 { margin-top: 0; font-size: 22px; }
+    iframe { width: 100%; height: 500px; border: none; border-radius: 16px; }
+  </style>
 </head>
 <body>
 
-<div class="header">남양주시 문화의집</div>
-
 <div class="container">
-    <div id="view-home" class="card">
-        <button class="btn primary" onclick="showView('attendance')">동아리 출석체크</button>
-        <button class="btn primary" onclick="showView('booking')">대관 신청</button>
-        <button class="btn primary" onclick="showView('external')">외부활동 공유</button>
-        <button class="btn primary" onclick="showView('calendar')">캘린더 보기</button>
-    </div>
+  <div id="view-home" class="card">
+    <h2 style="text-align:center;">문화의집 시스템</h2>
+    <button class="btn primary" onclick="showView('attendance')">동아리 출석체크</button>
+    <button class="btn primary" onclick="showView('booking')">대관 신청</button>
+    <button class="btn primary" onclick="showView('external')">외부활동 공유</button>
+    <button class="btn primary" onclick="showView('calendar')">캘린더 보기</button>
+  </div>
 
-    <div id="view-attendance" class="card hidden">
-        <div id="step-days">
-            <h3>요일을 선택하세요</h3>
-            <div id="days-box"></div>
-        </div>
-        <div id="step-clubs" class="hidden">
-            <h3>동아리를 선택하세요</h3>
-            <div id="clubs-box"></div>
-        </div>
-        <div id="step-members" class="hidden">
-            <h3 id="club-title"></h3>
-            <div id="members-box"></div>
-            <button class="btn primary" onclick="submitAtt()">출석 제출</button>
-        </div>
-        <button class="btn danger" onclick="handleBack()">뒤로가기</button>
+  <div id="view-attendance" class="card hidden">
+    <div id="step-days">
+      <h3>요일 선택</h3>
+      <div id="days-box"></div>
     </div>
+    <div id="step-clubs" class="hidden">
+      <h3>동아리 선택</h3>
+      <div id="clubs-box"></div>
+    </div>
+    <div id="step-members" class="hidden">
+      <h3 id="club-title"></h3>
+      <div id="members-box" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+      <button class="btn primary" onclick="submitAttendance()" style="margin-top:20px;">출석 제출</button>
+    </div>
+    <button class="btn danger" onclick="handleBack()" style="margin-top:15px;">뒤로가기</button>
+  </div>
 
-    <div id="view-booking" class="card hidden">
-        <h3>대관 신청</h3>
-        <input id="b_name" placeholder="신청자 성함">
-        <input id="b_phone" placeholder="전화번호">
-        <input id="b_space" placeholder="이용 공간">
-        <input id="b_content" placeholder="사용 목적">
-        <input id="b_date" type="datetime-local">
-        <select id="b_hours">
-            <option value="1">1시간</option><option value="2">2시간</option><option value="3">3시간</option>
-        </select>
-        <button class="btn primary" onclick="sendBooking()">신청 완료</button>
-        <button class="btn danger" onclick="showView('home')">메인으로</button>
-    </div>
+  <div id="view-booking" class="card hidden">
+    <h3>대관 신청</h3>
+    <input id="b_name" placeholder="신청자 성함">
+    <input id="b_phone" placeholder="전화번호">
+    <input id="b_space" placeholder="이용 장소 (예: 다목적실)">
+    <input id="b_content" placeholder="사용 목적">
+    <input id="b_date" type="datetime-local">
+    <select id="b_hours">
+      <option value="1">1시간</option><option value="2">2시간</option><option value="3">3시간</option>
+    </select>
+    <button class="btn primary" onclick="sendBooking()">신청 완료</button>
+    <button class="btn btn-back" onclick="showView('home')">메인으로</button>
+  </div>
 
-    <div id="view-external" class="card hidden">
-        <h3>외부활동 공유</h3>
-        <input id="e_club" placeholder="동아리명">
-        <input id="e_phone" placeholder="연락처">
-        <input id="e_event" placeholder="행사명">
-        <input id="e_content" placeholder="활동 내용">
-        <input id="e_date" type="datetime-local">
-        <button class="btn primary" onclick="sendExternal()">등록하기</button>
-        <button class="btn danger" onclick="showView('home')">메인으로</button>
-    </div>
+  <div id="view-external" class="card hidden">
+    <h3>외부활동 공유</h3>
+    <input id="e_club" placeholder="동아리명">
+    <input id="e_phone" placeholder="연락처">
+    <input id="e_event" placeholder="행사명">
+    <input id="e_content" placeholder="활동 내용">
+    <input id="e_date" type="datetime-local">
+    <button class="btn primary" onclick="sendExternal()">등록하기</button>
+    <button class="btn btn-back" onclick="showView('home')">메인으로</button>
+  </div>
 
-    <div id="view-calendar" class="card hidden">
-        <iframe src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse%40gmail.com&ctz=Asia%2FSeoul"></iframe>
-        <button class="btn danger" onclick="showView('home')">메인으로</button>
-    </div>
+  <div id="view-calendar" class="card hidden">
+    <iframe src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse%40gmail.com&ctz=Asia%2FSeoul"></iframe>
+    <button class="btn btn-back" onclick="showView('home')">메인으로</button>
+  </div>
 </div>
 
 <script>
-    let currentAttStep = 1;
-    let selectedDay = '', selectedClub = '', selectedMembers = [];
+  let currentStep = 1;
+  let selDay = '', selClub = '', selMembers = [];
 
-    function showView(name) {
-        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-        document.getElementById('view-' + name).classList.remove('hidden');
-        if(name === 'attendance') initAtt();
-    }
+  function showView(name) {
+    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+    document.getElementById('view-' + name).classList.remove('hidden');
+    if(name === 'attendance') initAttendance();
+  }
 
-    // --- 출석 로직 ---
-    function initAtt() {
-        showAttStep(1);
-        const days = ['화요일','수요일','목요일','금요일','토요일','일요일'];
-        const box = document.getElementById('days-box');
-        box.innerHTML = '';
-        days.forEach(d => {
-            const b = document.createElement('button');
-            b.className = 'btn';
-            b.innerText = d;
-            b.onclick = () => {
-                selectedDay = d;
-                loadClubs(d);
-            };
-            box.appendChild(b);
-        });
-    }
+  // --- 출석 로직 ---
+  function initAttendance() {
+    showStep(1);
+    const days = ['화요일','수요일','목요일','금요일','토요일','일요일'];
+    const box = document.getElementById('days-box');
+    box.innerHTML = '';
+    days.forEach(d => {
+      const b = document.createElement('button');
+      b.className = 'btn';
+      b.innerText = d;
+      b.onclick = () => { selDay = d; loadClubs(d); };
+      box.appendChild(b);
+    });
+  }
 
-    function loadClubs(day) {
-        showAttStep(2);
-        const box = document.getElementById('clubs-box');
-        box.innerHTML = '<div class="loading">동아리 목록 로딩 중...</div>';
-        google.script.run.withSuccessHandler(clubs => {
-            box.innerHTML = clubs.length ? '' : '<p>해당 요일 동아리가 없습니다.</p>';
-            clubs.forEach(c => {
-                const b = document.createElement('button');
-                b.className = 'btn';
-                b.innerText = c;
-                b.onclick = () => { selectedClub = c; loadMembers(c); };
-                box.appendChild(b);
-            });
-        }).getClubs(day);
-    }
+  function loadClubs(day) {
+    showStep(2);
+    const box = document.getElementById('clubs-box');
+    box.innerHTML = '<p style="text-align:center;">불러오는 중...</p>';
+    google.script.run.withSuccessHandler(clubs => {
+      box.innerHTML = clubs.length ? '' : '<p>동아리가 없습니다.</p>';
+      clubs.forEach(c => {
+        const b = document.createElement('button');
+        b.className = 'btn';
+        b.innerText = c;
+        b.onclick = () => { selClub = c; loadMembers(c); };
+        box.appendChild(b);
+      });
+    }).getClubs(day);
+  }
 
-    function loadMembers(club) {
-        showAttStep(3);
-        document.getElementById('club-title').innerText = club + " 명단";
-        const box = document.getElementById('members-box');
-        box.innerHTML = '<div class="loading">명단 로딩 중...</div>';
-        selectedMembers = [];
-        google.script.run.withSuccessHandler(members => {
-            box.innerHTML = '';
-            members.forEach(m => {
-                const b = document.createElement('button');
-                b.className = 'btn';
-                b.innerText = m;
-                b.onclick = () => {
-                    b.classList.toggle('selected');
-                    const idx = selectedMembers.indexOf(m);
-                    idx > -1 ? selectedMembers.splice(idx, 1) : selectedMembers.push(m);
-                };
-                box.appendChild(b);
-            });
-        }).getMembers(club);
-    }
-
-    function showAttStep(s) {
-        currentAttStep = s;
-        document.getElementById('step-days').className = (s===1 ? '' : 'hidden');
-        document.getElementById('step-clubs').className = (s===2 ? '' : 'hidden');
-        document.getElementById('step-members').className = (s===3 ? '' : 'hidden');
-    }
-
-    function handleBack() {
-        if(currentAttStep === 1) showView('home');
-        else showAttStep(currentAttStep - 1);
-    }
-
-    function submitAtt() {
-        if(!selectedMembers.length) return alert("인원을 선택하세요.");
-        google.script.run.withSuccessHandler(msg => {
-            alert(msg); showView('home');
-        }).submitAttendance(selectedDay, selectedClub, selectedMembers);
-    }
-
-    // --- 기타 기능 로직 ---
-    function sendBooking() {
-        const data = {
-            name: document.getElementById('b_name').value,
-            phone: document.getElementById('b_phone').value,
-            space: document.getElementById('b_space').value,
-            content: document.getElementById('b_content').value,
-            dateTime: document.getElementById('b_date').value,
-            hours: document.getElementById('b_hours').value
+  function loadMembers(club) {
+    showStep(3);
+    document.getElementById('club-title').innerText = club;
+    const box = document.getElementById('members-box');
+    box.innerHTML = '';
+    selMembers = [];
+    google.script.run.withSuccessHandler(members => {
+      members.forEach(m => {
+        const b = document.createElement('button');
+        b.className = 'btn';
+        b.innerText = m;
+        b.onclick = () => {
+          b.classList.toggle('selected');
+          const idx = selMembers.indexOf(m);
+          idx > -1 ? selMembers.splice(idx, 1) : selMembers.push(m);
         };
-        google.script.run.withSuccessHandler(msg => { alert(msg); showView('home'); }).submitBooking(data);
-    }
+        box.appendChild(b);
+      });
+    }).getMembers(club);
+  }
 
-    function sendExternal() {
-        const data = {
-            club: document.getElementById('e_club').value,
-            phone: document.getElementById('e_phone').value,
-            event: document.getElementById('e_event').value,
-            content: document.getElementById('e_content').value,
-            dateTime: document.getElementById('e_date').value
-        };
-        google.script.run.withSuccessHandler(msg => { alert(msg); showView('home'); }).submitExternal(data);
-    }
+  function showStep(s) {
+    currentStep = s;
+    document.getElementById('step-days').classList.toggle('hidden', s!==1);
+    document.getElementById('step-clubs').classList.toggle('hidden', s!==2);
+    document.getElementById('step-members').classList.toggle('hidden', s!==3);
+  }
+
+  function handleBack() {
+    if(currentStep === 1) showView('home');
+    else showStep(currentStep - 1);
+  }
+
+  function submitAttendance() {
+    if(!selMembers.length) return alert("인원을 선택하세요.");
+    google.script.run.withSuccessHandler(msg => { alert(msg); location.reload(); }).submitAttendance(selClub, selMembers);
+  }
+
+  // --- 대관/외부활동 전송 ---
+  function sendBooking() {
+    const data = {
+      name: document.getElementById('b_name').value,
+      phone: document.getElementById('b_phone').value,
+      space: document.getElementById('b_space').value,
+      content: document.getElementById('b_content').value,
+      dateTime: document.getElementById('b_date').value,
+      hours: document.getElementById('b_hours').value
+    };
+    google.script.run.withSuccessHandler(msg => { alert(msg); showView('home'); }).submitBooking(data);
+  }
+
+  function sendExternal() {
+    const data = {
+      club: document.getElementById('e_club').value,
+      phone: document.getElementById('e_phone').value,
+      event: document.getElementById('e_event').value,
+      content: document.getElementById('e_content').value,
+      dateTime: document.getElementById('e_date').value
+    };
+    google.script.run.withSuccessHandler(msg => { alert(msg); showView('home'); }).submitExternal(data);
+  }
 </script>
 </body>
 </html>
