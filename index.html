@@ -1,1 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>남양주시 문화의집</title>
+</head>
+
+<body>
+
+<h2>남양주시 문화의집</h2>
+
+<button onclick="loadClubs()">동아리 불러오기</button>
+
+<div id="clubList"></div>
+
+<script>
+
 const API = "https://script.google.com/macros/s/AKfycbyO4MEH9YOoEgNoeWmfMwuWKiFTbBhcXAbFYub3ktusOmZxe1kng0hlFpKNmWrMV-wRvw/exec";
+
+/* 동아리 불러오기 */
+function loadClubs(){
+  document.getElementById("clubList").innerHTML = "로딩중...";
+
+  fetch(API + "?type=getClubs")
+    .then(res => res.json())
+    .then(data => {
+      let html = "";
+      data.forEach(c=>{
+        html += `<div>${c}</div>`;
+      });
+      document.getElementById("clubList").innerHTML = html;
+    })
+    .catch(err=>{
+      document.getElementById("clubList").innerHTML = "에러 발생";
+      console.error(err);
+    });
+}
+
+</script>
+
+</body>
+</html>
