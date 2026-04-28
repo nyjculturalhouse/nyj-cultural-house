@@ -80,7 +80,7 @@ iframe { width:100%; height:500px; border:none; border-radius:12px;}
 <button class="btn primary" onclick="sendExternal()">등록</button>
 </div>
 
-<!-- 🔥 캘린더 복구 -->
+<!-- 캘린더 -->
 <div id="view-calendar" class="card hidden">
 <iframe src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse%40gmail.com&ctz=Asia%2FSeoul"></iframe>
 </div>
@@ -96,7 +96,6 @@ const API = "https://script.google.com/macros/s/AKfycbzcvY-Kt5JMeeejmVd7IRrJEj5m
 let step=1, selDay='', selClub='', selMembers=[];
 
 // 공통
-function vibrate(){ if(navigator.vibrate) navigator.vibrate(30); }
 function showToast(msg){
   const t=document.getElementById("toast");
   t.innerText=msg;
@@ -120,7 +119,8 @@ function showStep(n){
   document.getElementById(['step-days','step-clubs','step-members'][n-1]).classList.remove('hidden');
 }
 
-// 출석
+// ===== 출석 =====
+
 function loadDays(){
   showStep(1);
   const box=document.getElementById('step-days');
@@ -130,7 +130,7 @@ function loadDays(){
     const b=document.createElement('button');
     b.className='btn';
     b.innerText=d;
-    b.onclick=()=>{vibrate(); selDay=d; loadClubs(d);}
+    b.onclick=()=>{ selDay=d; loadClubs(d); }
     box.appendChild(b);
   });
 }
@@ -149,7 +149,6 @@ function loadClubs(day){
       b.className='btn';
       b.innerText=c;
       b.onclick=()=>{
-        vibrate();
         document.querySelectorAll('#step-clubs .btn').forEach(x=>x.classList.remove('selected'));
         b.classList.add('selected');
         selClub=c;
@@ -174,7 +173,6 @@ function loadMembers(club){
       b.className='btn';
       b.innerText=m;
       b.onclick=()=>{
-        vibrate();
         b.classList.toggle('selected');
         const i=selMembers.indexOf(m);
         i>-1?selMembers.splice(i,1):selMembers.push(m);
@@ -190,74 +188,75 @@ function loadMembers(club){
   });
 }
 
-// 🔥 제출 안정화 (핵심 수정)
+// 🔥 핵심 수정 (여기)
 function submitAttendance(){
   if(!selMembers.length){
     showToast("인원 선택");
     return;
   }
 
+  const params = new URLSearchParams({
+    mode:"submitAttendance",
+    club:selClub,
+    members:JSON.stringify(selMembers)
+  });
+
   fetch(API,{
     method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      mode:"submitAttendance",
-      club:selClub,
-      members:selMembers
-    })
+    body:params
   })
-  .then(r=>r.json())
-  .then(res=>{
-    vibrate();
-    showToast(res.msg || "출석 완료");
-    showView('home');
+  .then(res=>res.text())
+  .then(text=>{
+    try{
+      const data=JSON.parse(text);
+      showToast(data.msg || "출석 완료");
+      showView('home');
+    }catch{
+      showToast("응답 오류");
+    }
   })
-  .catch(()=>{
-    showToast("전송 실패");
+  .catch(()=>showToast("전송 실패"));
+}
+
+// ===== 대관 =====
+function sendBooking(){
+  const params = new URLSearchParams({
+    mode:"submitBooking",
+    name:b_name.value,
+    phone:b_phone.value,
+    space:b_space.value,
+    content:b_content.value,
+    dateTime:b_date.value,
+    hours:b_hours.value
   });
+
+  fetch(API,{method:"POST", body:params})
+  .then(res=>res.text())
+  .then(t=>showToast("대관 완료"))
+  .catch(()=>showToast("전송 실패"));
+}
+
+// ===== 외부 =====
+function sendExternal(){
+  const params = new URLSearchParams({
+    mode:"submitExternal",
+    club:e_club.value,
+    phone:e_phone.value,
+    event:e_event.value,
+    content:e_content.value,
+    dateTime:e_date.value
+  });
+
+  fetch(API,{method:"POST", body:params})
+  .then(res=>res.text())
+  .then(t=>showToast("등록 완료"))
+  .catch(()=>showToast("전송 실패"));
 }
 
 // 뒤로
 function back(){
   if(step===1) showView('home');
   else showStep(step-1);
-}
-
-// 대관
-function sendBooking(){
-  fetch(API,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      mode:"submitBooking",
-      name:b_name.value,
-      phone:b_phone.value,
-      space:b_space.value,
-      content:b_content.value,
-      dateTime:b_date.value,
-      hours:b_hours.value
-    })
-  })
-  .then(r=>r.json())
-  .then(res=>showToast(res.msg||"완료"));
-}
-
-// 외부
-function sendExternal(){
-  fetch(API,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      mode:"submitExternal",
-      club:e_club.value,
-      phone:e_phone.value,
-      event:e_event.value,
-      content:e_content.value,
-      dateTime:e_date.value
-    })
-  })
-  .then(r=>r.json())
-  .then(res=>showToast(res.msg||"완료"));
 }
 
 </script>
