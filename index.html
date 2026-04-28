@@ -23,12 +23,12 @@ iframe { width:100%; height:500px; border:none; border-radius:12px;}
   transform: translateX(-50%);
   background: #191f28;
   color: white;
-  padding: 15px 25px;
+  padding: 14px 20px;
   border-radius: 12px;
   opacity: 0;
   transition: 0.3s;
 }
-.toast.show { opacity: 1; }
+.toast.show { opacity:1; }
 </style>
 
 </head>
@@ -93,37 +93,33 @@ iframe { width:100%; height:500px; border:none; border-radius:12px;}
 
 const API = "https://script.google.com/macros/s/AKfycbzcvY-Kt5JMeeejmVd7IRrJEj5mdXzjWKqbex3BRUcIp-6xOlOfyK1DVSrYlbv5ZkCZ/exec";
 
-let step=1, selDay='', selClub='', selMembers=[];
+let step = 1;
+let selDay='', selClub='', selMembers=[];
 
-// 공통
+// ===== 공통 =====
 function showToast(msg){
-  const t=document.getElementById("toast");
+  const t=document.getElementById('toast');
   t.innerText=msg;
-  t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),2000);
+  t.classList.add('show');
+  if(navigator.vibrate) navigator.vibrate(200);
+  setTimeout(()=>t.classList.remove('show'),2000);
 }
 
-// 화면 전환
 function showView(v){
   document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
   document.getElementById('view-'+v).classList.remove('hidden');
   if(v==='attendance') loadDays();
 }
 
-// step 전환
-function showStep(n){
-  step=n;
-  ['step-days','step-clubs','step-members'].forEach(id=>{
-    document.getElementById(id).classList.add('hidden');
-  });
-  document.getElementById(['step-days','step-clubs','step-members'][n-1]).classList.remove('hidden');
-}
-
 // ===== 출석 =====
 
 function loadDays(){
-  showStep(1);
+  step=1;
   const box=document.getElementById('step-days');
+  box.classList.remove('hidden');
+  document.getElementById('step-clubs').classList.add('hidden');
+  document.getElementById('step-members').classList.add('hidden');
+
   box.innerHTML='<h3>요일 선택</h3>';
 
   ['화요일','수요일','목요일','금요일','토요일','일요일'].forEach(d=>{
@@ -136,8 +132,11 @@ function loadDays(){
 }
 
 function loadClubs(day){
-  showStep(2);
+  step=2;
+  document.getElementById('step-days').classList.add('hidden');
+
   const box=document.getElementById('step-clubs');
+  box.classList.remove('hidden');
   box.innerHTML='불러오는중...';
 
   fetch(`${API}?mode=getClubs&day=${encodeURIComponent(day)}`)
@@ -149,25 +148,29 @@ function loadClubs(day){
       b.className='btn';
       b.innerText=c;
       b.onclick=()=>{
+        selClub=c;
         document.querySelectorAll('#step-clubs .btn').forEach(x=>x.classList.remove('selected'));
         b.classList.add('selected');
-        selClub=c;
         loadMembers(c);
-      };
+      }
       box.appendChild(b);
     });
   });
 }
 
 function loadMembers(club){
-  showStep(3);
+  step=3;
+  document.getElementById('step-clubs').classList.add('hidden');
+
   const box=document.getElementById('step-members');
+  box.classList.remove('hidden');
   selMembers=[];
 
   fetch(`${API}?mode=getMembers&club=${encodeURIComponent(club)}`)
   .then(r=>r.json())
   .then(data=>{
     box.innerHTML=`<h3>${club}</h3>`;
+
     data.forEach(m=>{
       const b=document.createElement('button');
       b.className='btn';
@@ -188,75 +191,68 @@ function loadMembers(club){
   });
 }
 
-// 🔥 핵심 수정 (여기)
+// 🔥 GET 방식 제출
 function submitAttendance(){
   if(!selMembers.length){
-    showToast("인원 선택");
+    showToast("인원 선택하세요");
     return;
   }
 
-  const params = new URLSearchParams({
-    mode:"submitAttendance",
-    club:selClub,
-    members:JSON.stringify(selMembers)
-  });
+  const url = `${API}?mode=submitAttendance`
+    + `&club=${encodeURIComponent(selClub)}`
+    + `&members=${encodeURIComponent(JSON.stringify(selMembers))}`;
 
-  fetch(API,{
-    method:"POST",
-    body:params
-  })
-  .then(res=>res.text())
-  .then(text=>{
-    try{
-      const data=JSON.parse(text);
-      showToast(data.msg || "출석 완료");
-      showView('home');
-    }catch{
-      showToast("응답 오류");
-    }
+  fetch(url)
+  .then(r=>r.json())
+  .then(res=>{
+    showToast(res.msg || "완료");
+    setTimeout(()=>showView('home'),1500);
   })
   .catch(()=>showToast("전송 실패"));
 }
 
+function back(){
+  if(step===1) showView('home');
+  else if(step===2){
+    document.getElementById('step-clubs').classList.add('hidden');
+    document.getElementById('step-days').classList.remove('hidden');
+    step=1;
+  } else {
+    document.getElementById('step-members').classList.add('hidden');
+    document.getElementById('step-clubs').classList.remove('hidden');
+    step=2;
+  }
+}
+
 // ===== 대관 =====
 function sendBooking(){
-  const params = new URLSearchParams({
-    mode:"submitBooking",
-    name:b_name.value,
-    phone:b_phone.value,
-    space:b_space.value,
-    content:b_content.value,
-    dateTime:b_date.value,
-    hours:b_hours.value
-  });
+  const url = `${API}?mode=submitBooking`
+    + `&name=${b_name.value}`
+    + `&phone=${b_phone.value}`
+    + `&space=${b_space.value}`
+    + `&content=${b_content.value}`
+    + `&dateTime=${b_date.value}`
+    + `&hours=${b_hours.value}`;
 
-  fetch(API,{method:"POST", body:params})
-  .then(res=>res.text())
-  .then(t=>showToast("대관 완료"))
+  fetch(url)
+  .then(r=>r.json())
+  .then(res=>showToast(res.msg))
   .catch(()=>showToast("전송 실패"));
 }
 
 // ===== 외부 =====
 function sendExternal(){
-  const params = new URLSearchParams({
-    mode:"submitExternal",
-    club:e_club.value,
-    phone:e_phone.value,
-    event:e_event.value,
-    content:e_content.value,
-    dateTime:e_date.value
-  });
+  const url = `${API}?mode=submitExternal`
+    + `&club=${e_club.value}`
+    + `&phone=${e_phone.value}`
+    + `&event=${e_event.value}`
+    + `&content=${e_content.value}`
+    + `&dateTime=${e_date.value}`;
 
-  fetch(API,{method:"POST", body:params})
-  .then(res=>res.text())
-  .then(t=>showToast("등록 완료"))
+  fetch(url)
+  .then(r=>r.json())
+  .then(res=>showToast(res.msg))
   .catch(()=>showToast("전송 실패"));
-}
-
-// 뒤로
-function back(){
-  if(step===1) showView('home');
-  else showStep(step-1);
 }
 
 </script>
