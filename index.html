@@ -11,7 +11,6 @@ body {
   margin:0;
 }
 
-/* ===== 레이아웃 ===== */
 .container {
   max-width:760px;
   margin:auto;
@@ -26,7 +25,6 @@ body {
   box-shadow:0 8px 20px rgba(0,0,0,0.05);
 }
 
-/* ===== 버튼 ===== */
 .btn {
   width:100%;
   padding:22px;
@@ -35,33 +33,19 @@ body {
   border-radius:16px;
   font-size:20px;
   cursor:pointer;
-  transition:0.15s;
 }
 
-.btn:active {
-  transform:scale(0.98);
-}
+.btn:active { transform:scale(0.98); }
 
-/* 기본 버튼 */
-.primary {
-  background:#3182f6;
-  color:white;
-}
+.primary { background:#3182f6; color:white; }
+.back { background:#e5e7eb; color:#333; }
 
-/* 뒤로가기 */
-.back {
-  background:#e5e7eb;
-  color:#333;
-}
-
-/* 선택 상태 */
 .selected {
   background:#3182f6;
   color:white;
   position:relative;
 }
 
-/* 체크 아이콘 */
 .selected::after {
   content:"✓";
   position:absolute;
@@ -82,7 +66,6 @@ body {
 
 .hidden { display:none; }
 
-/* 입력 */
 input, select {
   width:100%;
   padding:16px;
@@ -92,7 +75,6 @@ input, select {
   font-size:18px;
 }
 
-/* 캘린더 */
 iframe {
   width:100%;
   height:650px;
@@ -100,7 +82,6 @@ iframe {
   border-radius:14px;
 }
 
-/* 토스트 */
 .toast {
   position:fixed;
   bottom:30px;
@@ -114,7 +95,6 @@ iframe {
   transition:0.3s;
   font-size:18px;
 }
-
 .toast.show { opacity:1; }
 </style>
 </head>
@@ -123,7 +103,7 @@ iframe {
 
 <div class="container">
 
-<!-- ================= 홈 ================= -->
+<!-- 홈 -->
 <div id="view-home" class="card">
 <h2 style="text-align:center; font-size:26px;">문화의집 시스템</h2>
 
@@ -133,22 +113,24 @@ iframe {
 <button class="btn primary" onclick="showView('calendar')">캘린더</button>
 </div>
 
-<!-- ================= 출석 ================= -->
+<!-- 출석 -->
 <div id="view-attendance" class="card hidden">
 <div id="step-days"></div>
 <div id="step-clubs" class="hidden"></div>
 <div id="step-members" class="hidden"></div>
-
 <button class="btn back" onclick="back()">뒤로가기</button>
 </div>
 
-<!-- ================= 대관 ================= -->
+<!-- 대관 -->
 <div id="view-booking" class="card hidden">
 <h3>대관 신청</h3>
 
 <input id="b_name" placeholder="이름">
 <input id="b_phone" placeholder="전화번호">
-<input id="b_space" placeholder="장소">
+
+<h4>공간 선택</h4>
+<div id="spaceBox"></div>
+
 <input id="b_content" placeholder="내용">
 <input id="b_date" type="datetime-local">
 
@@ -162,7 +144,7 @@ iframe {
 <button class="btn back" onclick="showView('home')">뒤로가기</button>
 </div>
 
-<!-- ================= 외부 ================= -->
+<!-- 외부 -->
 <div id="view-external" class="card hidden">
 <h3>외부활동</h3>
 
@@ -176,10 +158,9 @@ iframe {
 <button class="btn back" onclick="showView('home')">뒤로가기</button>
 </div>
 
-<!-- ================= 캘린더 ================= -->
+<!-- 캘린더 -->
 <div id="view-calendar" class="card hidden">
 <iframe src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse%40gmail.com&ctz=Asia%2FSeoul"></iframe>
-
 <button class="btn back" onclick="showView('home')">뒤로가기</button>
 </div>
 
@@ -193,24 +174,44 @@ const API = "https://script.google.com/macros/s/AKfycbzg8cnqcvWHhAutwqItto9Wucn4
 
 let step=1;
 let selDay='', selClub='', selMembers=[];
+let selectedSpace="";
 
-// ===== 토스트 =====
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.innerText=msg;
-  t.classList.add('show');
-  if(navigator.vibrate) navigator.vibrate(200);
-  setTimeout(()=>t.classList.remove('show'),2000);
+// ================= 공간 선택 =================
+function loadSpaces(){
+  const spaces=["어울림방","댄스실","음악실","동아리방"];
+  const box=document.getElementById("spaceBox");
+
+  box.innerHTML="";
+
+  spaces.forEach(s=>{
+    const b=document.createElement("button");
+    b.className="btn";
+    b.innerText=s;
+
+    b.onclick=()=>{
+      selectedSpace=s;
+
+      document.querySelectorAll("#spaceBox .btn").forEach(x=>{
+        x.classList.remove("selected");
+      });
+
+      b.classList.add("selected");
+    };
+
+    box.appendChild(b);
+  });
 }
 
-// ===== 화면 =====
+// ================= 화면 =================
 function showView(v){
   document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
   document.getElementById('view-'+v).classList.remove('hidden');
+
   if(v==='attendance') loadDays();
+  if(v==='booking') loadSpaces();
 }
 
-// ===== iframe 전송 =====
+// ================= iframe =================
 function sendByIframe(url){
   const iframe=document.createElement("iframe");
   iframe.style.display="none";
@@ -236,13 +237,8 @@ function loadDays(){
     b.innerText=d;
 
     b.onclick=()=>{
-
       selDay=d;
-
-      document.querySelectorAll('#step-days .btn').forEach(x=>{
-        x.classList.remove('selected');
-      });
-
+      document.querySelectorAll('#step-days .btn').forEach(x=>x.classList.remove('selected'));
       b.classList.add('selected');
       loadClubs(d);
     };
@@ -271,11 +267,7 @@ function loadClubs(day){
 
       b.onclick=()=>{
         selClub=c;
-
-        document.querySelectorAll('#step-clubs .btn').forEach(x=>{
-          x.classList.remove('selected');
-        });
-
+        document.querySelectorAll('#step-clubs .btn').forEach(x=>x.classList.remove('selected'));
         b.classList.add('selected');
         loadMembers(c);
       };
@@ -306,7 +298,6 @@ function loadMembers(club){
 
       b.onclick=()=>{
         b.classList.toggle('selected');
-
         const i=selMembers.indexOf(m);
         i>-1 ? selMembers.splice(i,1) : selMembers.push(m);
       };
@@ -318,14 +309,13 @@ function loadMembers(club){
     submit.className='btn primary';
     submit.innerText='출석 제출';
     submit.onclick=submitAttendance;
-
     box.appendChild(submit);
   });
 }
 
 function submitAttendance(){
   if(!selMembers.length){
-    showToast("인원 선택하세요");
+    alert("인원 선택하세요");
     return;
   }
 
@@ -334,23 +324,27 @@ function submitAttendance(){
     + `&members=${encodeURIComponent(JSON.stringify(selMembers))}`;
 
   sendByIframe(url);
-
-  showToast("출석 완료");
-  setTimeout(()=>showView('home'),1500);
+  showView('home');
 }
 
 // ================= 대관 =================
 function sendBooking(){
+
+  if(!selectedSpace){
+    alert("공간을 선택하세요");
+    return;
+  }
+
   const url = `${API}?mode=submitBooking`
     + `&name=${b_name.value}`
     + `&phone=${b_phone.value}`
-    + `&space=${b_space.value}`
+    + `&space=${selectedSpace}`
     + `&content=${b_content.value}`
     + `&dateTime=${b_date.value}`
     + `&hours=${b_hours.value}`;
 
   sendByIframe(url);
-  showToast("대관 신청 완료");
+  showView('home');
 }
 
 // ================= 외부 =================
@@ -363,7 +357,7 @@ function sendExternal(){
     + `&dateTime=${e_date.value}`;
 
   sendByIframe(url);
-  showToast("외부활동 제출 완료");
+  showView('home');
 }
 
 // ================= 뒤로 =================
