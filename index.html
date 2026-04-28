@@ -1,3 +1,4 @@
+<script>
 const API = "https://script.google.com/macros/s/AKfycbyO4MEH9YOoEgNoeWmfMwuWKiFTbBhcXAbFYub3ktusOmZxe1kng0hlFpKNmWrMV-wRvw/exec";
 
 let selectedDay = '';
@@ -31,8 +32,7 @@ function showStep(stepId) {
 
         selectedDay = day;
 
-        // 🔥 fetch로 변경
-        fetch(API + "?type=getClubs")
+        fetch(API + "?type=getClubs&day=" + day)
           .then(res => res.json())
           .then(clubs => {
             const c = document.getElementById('club-buttons');
@@ -47,10 +47,6 @@ function showStep(stepId) {
             });
 
             showStep('step-clubs');
-          })
-          .catch(err=>{
-            showToast("동아리 불러오기 실패");
-            console.error(err);
           });
       };
 
@@ -68,7 +64,6 @@ function selectClub(club, btnEl) {
 
   document.getElementById('selected-club-title').innerText = club + ' 출석부';
 
-  // 🔥 fetch로 변경
   fetch(API + "?type=getMembers&club=" + encodeURIComponent(club))
     .then(res => res.json())
     .then(members=>{
@@ -91,10 +86,6 @@ function selectClub(club, btnEl) {
       });
 
       showStep('step-members');
-    })
-    .catch(err=>{
-      showToast("이름 불러오기 실패");
-      console.error(err);
     });
 }
 
@@ -104,7 +95,6 @@ function submitData() {
     return;
   }
 
-  // 🔥 fetch POST
   fetch(API, {
     method: "POST",
     body: JSON.stringify({
@@ -113,13 +103,9 @@ function submitData() {
       members: selectedMembers,
       day: selectedDay
     })
-  })
-  .then(()=>{
+  }).then(()=>{
     showToast("출석 완료되었습니다");
     showStep('step-home');
-  })
-  .catch(err=>{
-    showToast("출석 실패");
-    console.error(err);
   });
 }
+</script>
