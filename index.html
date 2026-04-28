@@ -2,69 +2,26 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.3">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family:-apple-system,'Noto Sans KR'; background:#f2f4f6; margin:0;}
-.container { max-width:600px; margin:auto; padding:24px;}
-
-.card {
-  background:white;
-  padding:30px;
-  border-radius:24px;
-  margin-bottom:20px;
-  box-shadow:0 10px 25px rgba(0,0,0,0.08);
-}
-
-/* 🔥 글씨 크게 */
-h2 { text-align:center; font-size:34px; }
-h3 { font-size:26px; }
-
-/* 🔥 버튼 크게 */
-.btn {
-  width:100%;
-  padding:26px;
-  margin-top:14px;
-  border:none;
-  border-radius:18px;
-  font-size:26px;
-  cursor:pointer;
-  background:#fff;
-}
-
-.primary { background:#3182f6; color:white; font-weight:bold;}
+body { font-family:-apple-system; background:#f2f4f6; margin:0;}
+.container { max-width:500px; margin:auto; padding:20px;}
+.card { background:white; padding:25px; border-radius:20px; margin-bottom:20px; box-shadow:0 8px 20px rgba(0,0,0,0.05);}
+.btn { width:100%; padding:18px; margin-top:10px; border:none; border-radius:14px; font-size:16px; cursor:pointer;}
+.primary { background:#3182f6; color:white;}
 .danger { background:#ff4d4f; color:white;}
+.selected { background:#3182f6; color:white;}
+.hidden { display:none;}
+input, select { width:100%; padding:14px; margin-top:10px; border-radius:10px; border:1px solid #ddd;}
+iframe { width:100%; height:500px; border:none; border-radius:12px;}
 
-.selected {
-  background:#3182f6;
-  color:white;
-  transform:scale(1.05);
-}
-
-/* 🔥 입력 크게 */
-input, select {
-  width:100%;
-  padding:20px;
-  font-size:22px;
-  margin-top:10px;
-  border-radius:14px;
-  border:1px solid #ddd;
-}
-
-.hidden { display:none; }
-
-iframe { width:100%; height:550px; border:none; border-radius:14px;}
-
-/* 🔥 토스트 */
 .toast {
-  position:fixed; bottom:40px; left:50%;
+  position:fixed; bottom:30px; left:50%;
   transform:translateX(-50%);
   background:#191f28; color:white;
-  padding:18px 26px;
-  font-size:22px;
-  border-radius:14px;
-  opacity:0;
-  transition:0.3s;
+  padding:14px 20px; border-radius:12px;
+  opacity:0; transition:0.3s;
 }
 .toast.show { opacity:1;}
 </style>
@@ -76,7 +33,7 @@ iframe { width:100%; height:550px; border:none; border-radius:14px;}
 
 <!-- 홈 -->
 <div id="view-home" class="card">
-<h2>문화의집 시스템</h2>
+<h2 style="text-align:center;">문화의집 시스템</h2>
 <button class="btn primary" onclick="showView('attendance')">출석체크</button>
 <button class="btn primary" onclick="showView('booking')">대관 신청</button>
 <button class="btn primary" onclick="showView('external')">외부활동</button>
@@ -88,12 +45,12 @@ iframe { width:100%; height:550px; border:none; border-radius:14px;}
 <div id="step-days"></div>
 <div id="step-clubs" class="hidden"></div>
 <div id="step-members" class="hidden"></div>
-<button class="btn danger" onclick="back()">뒤로가기</button>
+<button class="btn danger" onclick="back()">뒤로</button>
 </div>
 
 <!-- 대관 -->
 <div id="view-booking" class="card hidden">
-<h2>대관 신청</h2>
+<h3>대관 신청</h3>
 <input id="b_name" placeholder="이름">
 <input id="b_phone" placeholder="전화번호">
 <input id="b_space" placeholder="장소">
@@ -109,7 +66,7 @@ iframe { width:100%; height:550px; border:none; border-radius:14px;}
 
 <!-- 외부 -->
 <div id="view-external" class="card hidden">
-<h2>외부활동</h2>
+<h3>외부활동</h3>
 <input id="e_club" placeholder="동아리">
 <input id="e_phone" placeholder="연락처">
 <input id="e_event" placeholder="행사명">
@@ -133,14 +90,13 @@ const API = "https://script.google.com/macros/s/AKfycbzg8cnqcvWHhAutwqItto9Wucn4
 
 let step=1;
 let selDay='', selClub='', selMembers=[];
-let clubCache={}, memberCache={};
 
 // ===== 공통 =====
 function showToast(msg){
   const t=document.getElementById('toast');
   t.innerText=msg;
   t.classList.add('show');
-  if(navigator.vibrate) navigator.vibrate(300);
+  if(navigator.vibrate) navigator.vibrate(200);
   setTimeout(()=>t.classList.remove('show'),2000);
 }
 
@@ -150,12 +106,13 @@ function showView(v){
   if(v==='attendance') loadDays();
 }
 
-// ===== iframe 전송 =====
+// ===== iframe 전송 핵심 =====
 function sendByIframe(url){
   const iframe=document.createElement("iframe");
   iframe.style.display="none";
   iframe.src=url;
   document.body.appendChild(iframe);
+
   setTimeout(()=>iframe.remove(),2000);
 }
 
@@ -185,38 +142,24 @@ function loadClubs(day){
 
   const box=document.getElementById('step-clubs');
   box.classList.remove('hidden');
-
-  // 🔥 캐싱
-  if(clubCache[day]){
-    renderClubs(clubCache[day]);
-    return;
-  }
-
   box.innerHTML='불러오는중...';
 
   fetch(`${API}?mode=getClubs&day=${encodeURIComponent(day)}`)
   .then(r=>r.json())
   .then(data=>{
-    clubCache[day]=data;
-    renderClubs(data);
-  });
-}
-
-function renderClubs(data){
-  const box=document.getElementById('step-clubs');
-  box.innerHTML='<h3>동아리 선택</h3>';
-
-  data.forEach(c=>{
-    const b=document.createElement('button');
-    b.className='btn';
-    b.innerText=c;
-    b.onclick=()=>{
-      selClub=c;
-      document.querySelectorAll('#step-clubs .btn').forEach(x=>x.classList.remove('selected'));
-      b.classList.add('selected');
-      loadMembers(c);
-    }
-    box.appendChild(b);
+    box.innerHTML='<h3>동아리 선택</h3>';
+    data.forEach(c=>{
+      const b=document.createElement('button');
+      b.className='btn';
+      b.innerText=c;
+      b.onclick=()=>{
+        selClub=c;
+        document.querySelectorAll('#step-clubs .btn').forEach(x=>x.classList.remove('selected'));
+        b.classList.add('selected');
+        loadMembers(c);
+      }
+      box.appendChild(b);
+    });
   });
 }
 
@@ -228,40 +171,29 @@ function loadMembers(club){
   box.classList.remove('hidden');
   selMembers=[];
 
-  if(memberCache[club]){
-    renderMembers(club, memberCache[club]);
-    return;
-  }
-
   fetch(`${API}?mode=getMembers&club=${encodeURIComponent(club)}`)
   .then(r=>r.json())
   .then(data=>{
-    memberCache[club]=data;
-    renderMembers(club,data);
+    box.innerHTML=`<h3>${club}</h3>`;
+
+    data.forEach(m=>{
+      const b=document.createElement('button');
+      b.className='btn';
+      b.innerText=m;
+      b.onclick=()=>{
+        b.classList.toggle('selected');
+        const i=selMembers.indexOf(m);
+        i>-1?selMembers.splice(i,1):selMembers.push(m);
+      };
+      box.appendChild(b);
+    });
+
+    const submit=document.createElement('button');
+    submit.className='btn primary';
+    submit.innerText='출석 제출';
+    submit.onclick=submitAttendance;
+    box.appendChild(submit);
   });
-}
-
-function renderMembers(club,data){
-  const box=document.getElementById('step-members');
-  box.innerHTML=`<h3>${club}</h3>`;
-
-  data.forEach(m=>{
-    const b=document.createElement('button');
-    b.className='btn';
-    b.innerText=m;
-    b.onclick=()=>{
-      b.classList.toggle('selected');
-      const i=selMembers.indexOf(m);
-      i>-1?selMembers.splice(i,1):selMembers.push(m);
-    };
-    box.appendChild(b);
-  });
-
-  const submit=document.createElement('button');
-  submit.className='btn primary';
-  submit.innerText='출석 제출';
-  submit.onclick=submitAttendance;
-  box.appendChild(submit);
 }
 
 function submitAttendance(){
@@ -277,7 +209,7 @@ function submitAttendance(){
   sendByIframe(url);
 
   showToast("출석 완료");
-  setTimeout(()=>showView('home'),1200);
+  setTimeout(()=>showView('home'),1500);
 }
 
 // ===== 대관 =====
@@ -292,12 +224,6 @@ function sendBooking(){
 
   sendByIframe(url);
   showToast("대관 신청 완료");
-
-  setTimeout(()=>{
-    b_name.value=''; b_phone.value=''; b_space.value='';
-    b_content.value=''; b_date.value='';
-    showView('home');
-  },1000);
 }
 
 // ===== 외부 =====
@@ -310,14 +236,7 @@ function sendExternal(){
     + `&dateTime=${e_date.value}`;
 
   sendByIframe(url);
-  showToast("제출 완료");
-
-  setTimeout(()=>{
-    e_club.value=''; e_phone.value='';
-    e_event.value=''; e_content.value='';
-    e_date.value='';
-    showView('home');
-  },1000);
+  showToast("외부활동 등록 완료");
 }
 
 // ===== 뒤로 =====
