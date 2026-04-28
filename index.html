@@ -11,7 +11,7 @@ body {
   margin:0;
 }
 
-/* 🔥 가로 확장 */
+/* ===== 레이아웃 ===== */
 .container {
   max-width:760px;
   margin:auto;
@@ -26,7 +26,7 @@ body {
   box-shadow:0 8px 20px rgba(0,0,0,0.05);
 }
 
-/* 🔥 버튼 크게 + UX 통일 */
+/* ===== 버튼 ===== */
 .btn {
   width:100%;
   padding:22px;
@@ -42,26 +42,26 @@ body {
   transform:scale(0.98);
 }
 
-/* 기본 */
+/* 기본 버튼 */
 .primary {
   background:#3182f6;
   color:white;
 }
 
-/* 🔥 뒤로가기 = 밝은 회색 */
+/* 뒤로가기 */
 .back {
   background:#e5e7eb;
   color:#333;
 }
 
-/* 🔥 선택 상태 */
+/* 선택 상태 */
 .selected {
   background:#3182f6;
   color:white;
   position:relative;
 }
 
-/* 체크 표시 */
+/* 체크 아이콘 */
 .selected::after {
   content:"✓";
   position:absolute;
@@ -82,6 +82,7 @@ body {
 
 .hidden { display:none; }
 
+/* 입력 */
 input, select {
   width:100%;
   padding:16px;
@@ -91,7 +92,7 @@ input, select {
   font-size:18px;
 }
 
-/* 🔥 캘린더 크게 */
+/* 캘린더 */
 iframe {
   width:100%;
   height:650px;
@@ -99,6 +100,7 @@ iframe {
   border-radius:14px;
 }
 
+/* 토스트 */
 .toast {
   position:fixed;
   bottom:30px;
@@ -121,7 +123,7 @@ iframe {
 
 <div class="container">
 
-<!-- 홈 -->
+<!-- ================= 홈 ================= -->
 <div id="view-home" class="card">
 <h2 style="text-align:center; font-size:26px;">문화의집 시스템</h2>
 
@@ -131,7 +133,7 @@ iframe {
 <button class="btn primary" onclick="showView('calendar')">캘린더</button>
 </div>
 
-<!-- 출석 -->
+<!-- ================= 출석 ================= -->
 <div id="view-attendance" class="card hidden">
 <div id="step-days"></div>
 <div id="step-clubs" class="hidden"></div>
@@ -140,9 +142,10 @@ iframe {
 <button class="btn back" onclick="back()">뒤로가기</button>
 </div>
 
-<!-- 대관 -->
+<!-- ================= 대관 ================= -->
 <div id="view-booking" class="card hidden">
 <h3>대관 신청</h3>
+
 <input id="b_name" placeholder="이름">
 <input id="b_phone" placeholder="전화번호">
 <input id="b_space" placeholder="장소">
@@ -156,23 +159,28 @@ iframe {
 </select>
 
 <button class="btn primary" onclick="sendBooking()">신청</button>
+<button class="btn back" onclick="showView('home')">뒤로가기</button>
 </div>
 
-<!-- 외부 -->
+<!-- ================= 외부 ================= -->
 <div id="view-external" class="card hidden">
 <h3>외부활동</h3>
+
 <input id="e_club" placeholder="동아리">
 <input id="e_phone" placeholder="연락처">
 <input id="e_event" placeholder="행사명">
 <input id="e_content" placeholder="내용">
 <input id="e_date" type="datetime-local">
 
-<button class="btn primary" onclick="sendExternal()">등록</button>
+<button class="btn primary" onclick="sendExternal()">제출</button>
+<button class="btn back" onclick="showView('home')">뒤로가기</button>
 </div>
 
-<!-- 캘린더 -->
+<!-- ================= 캘린더 ================= -->
 <div id="view-calendar" class="card hidden">
 <iframe src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse%40gmail.com&ctz=Asia%2FSeoul"></iframe>
+
+<button class="btn back" onclick="showView('home')">뒤로가기</button>
 </div>
 
 </div>
@@ -211,9 +219,7 @@ function sendByIframe(url){
   setTimeout(()=>iframe.remove(),2000);
 }
 
-// =====================
-// 🔥 출석
-// =====================
+// ================= 출석 =================
 function loadDays(){
   step=1;
   const box=document.getElementById('step-days');
@@ -230,16 +236,14 @@ function loadDays(){
     b.innerText=d;
 
     b.onclick=()=>{
+
       selDay=d;
 
       document.querySelectorAll('#step-days .btn').forEach(x=>{
         x.classList.remove('selected');
-        x.innerHTML = x.innerHTML.replace(" ✓","");
       });
 
       b.classList.add('selected');
-      b.innerHTML = d + " ✓";
-
       loadClubs(d);
     };
 
@@ -270,12 +274,9 @@ function loadClubs(day){
 
         document.querySelectorAll('#step-clubs .btn').forEach(x=>{
           x.classList.remove('selected');
-          x.innerHTML = x.innerHTML.replace(" ✓","");
         });
 
         b.classList.add('selected');
-        b.innerHTML = c + " ✓";
-
         loadMembers(c);
       };
 
@@ -338,9 +339,7 @@ function submitAttendance(){
   setTimeout(()=>showView('home'),1500);
 }
 
-// =====================
-// 대관
-// =====================
+// ================= 대관 =================
 function sendBooking(){
   const url = `${API}?mode=submitBooking`
     + `&name=${b_name.value}`
@@ -354,9 +353,7 @@ function sendBooking(){
   showToast("대관 신청 완료");
 }
 
-// =====================
-// 외부
-// =====================
+// ================= 외부 =================
 function sendExternal(){
   const url = `${API}?mode=submitExternal`
     + `&club=${e_club.value}`
@@ -369,9 +366,7 @@ function sendExternal(){
   showToast("외부활동 제출 완료");
 }
 
-// =====================
-// 뒤로
-// =====================
+// ================= 뒤로 =================
 function back(){
   if(step===1) showView('home');
   else if(step===2){
