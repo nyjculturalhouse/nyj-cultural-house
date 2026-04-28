@@ -14,6 +14,7 @@ body { font-family: -apple-system; background: #f2f4f6; margin:0; }
 .selected { background:#3182f6; color:white; }
 .hidden { display:none; }
 input, select { width:100%; padding:14px; margin-top:10px; border-radius:10px; border:1px solid #ddd;}
+iframe { width:100%; height:500px; border:none; border-radius:12px;}
 
 .toast {
   position: fixed;
@@ -41,6 +42,7 @@ input, select { width:100%; padding:14px; margin-top:10px; border-radius:10px; b
 <button class="btn primary" onclick="showView('attendance')">출석체크</button>
 <button class="btn primary" onclick="showView('booking')">대관 신청</button>
 <button class="btn primary" onclick="showView('external')">외부활동</button>
+<button class="btn primary" onclick="showView('calendar')">캘린더</button>
 </div>
 
 <!-- 출석 -->
@@ -51,6 +53,38 @@ input, select { width:100%; padding:14px; margin-top:10px; border-radius:10px; b
 <button class="btn danger" onclick="back()">뒤로</button>
 </div>
 
+<!-- 대관 -->
+<div id="view-booking" class="card hidden">
+<h3>대관 신청</h3>
+<input id="b_name" placeholder="이름">
+<input id="b_phone" placeholder="전화번호">
+<input id="b_space" placeholder="장소">
+<input id="b_content" placeholder="내용">
+<input id="b_date" type="datetime-local">
+<select id="b_hours">
+<option value="1">1시간</option>
+<option value="2">2시간</option>
+<option value="3">3시간</option>
+</select>
+<button class="btn primary" onclick="sendBooking()">신청</button>
+</div>
+
+<!-- 외부 -->
+<div id="view-external" class="card hidden">
+<h3>외부활동</h3>
+<input id="e_club" placeholder="동아리">
+<input id="e_phone" placeholder="연락처">
+<input id="e_event" placeholder="행사명">
+<input id="e_content" placeholder="내용">
+<input id="e_date" type="datetime-local">
+<button class="btn primary" onclick="sendExternal()">등록</button>
+</div>
+
+<!-- 🔥 캘린더 복구 -->
+<div id="view-calendar" class="card hidden">
+<iframe src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse%40gmail.com&ctz=Asia%2FSeoul"></iframe>
+</div>
+
 </div>
 
 <div id="toast" class="toast"></div>
@@ -59,17 +93,13 @@ input, select { width:100%; padding:14px; margin-top:10px; border-radius:10px; b
 
 const API = "https://script.google.com/macros/s/AKfycbzcvY-Kt5JMeeejmVd7IRrJEj5mdXzjWKqbex3BRUcIp-6xOlOfyK1DVSrYlbv5ZkCZ/exec";
 
-let step = 1;
-let selDay='', selClub='', selMembers=[];
+let step=1, selDay='', selClub='', selMembers=[];
 
-// ===== 공통 =====
-function vibrate(){
-  if(navigator.vibrate) navigator.vibrate(30);
-}
-
+// 공통
+function vibrate(){ if(navigator.vibrate) navigator.vibrate(30); }
 function showToast(msg){
-  const t = document.getElementById("toast");
-  t.innerText = msg;
+  const t=document.getElementById("toast");
+  t.innerText=msg;
   t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),2000);
 }
@@ -83,18 +113,14 @@ function showView(v){
 
 // step 전환
 function showStep(n){
-  step = n;
-  document.getElementById('step-days').classList.add('hidden');
-  document.getElementById('step-clubs').classList.add('hidden');
-  document.getElementById('step-members').classList.add('hidden');
-
-  if(n===1) document.getElementById('step-days').classList.remove('hidden');
-  if(n===2) document.getElementById('step-clubs').classList.remove('hidden');
-  if(n===3) document.getElementById('step-members').classList.remove('hidden');
+  step=n;
+  ['step-days','step-clubs','step-members'].forEach(id=>{
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById(['step-days','step-clubs','step-members'][n-1]).classList.remove('hidden');
 }
 
-// ===== 출석 =====
-
+// 출석
 function loadDays(){
   showStep(1);
   const box=document.getElementById('step-days');
@@ -104,13 +130,7 @@ function loadDays(){
     const b=document.createElement('button');
     b.className='btn';
     b.innerText=d;
-
-    b.onclick=()=>{
-      vibrate();
-      selDay=d;
-      loadClubs(d);
-    };
-
+    b.onclick=()=>{vibrate(); selDay=d; loadClubs(d);}
     box.appendChild(b);
   });
 }
@@ -124,23 +144,17 @@ function loadClubs(day){
   .then(r=>r.json())
   .then(data=>{
     box.innerHTML='<h3>동아리 선택</h3>';
-
     data.forEach(c=>{
       const b=document.createElement('button');
       b.className='btn';
       b.innerText=c;
-
       b.onclick=()=>{
         vibrate();
-
-        // 🔥 선택 표시
-        document.querySelectorAll('#step-clubs .btn').forEach(btn=>btn.classList.remove('selected'));
+        document.querySelectorAll('#step-clubs .btn').forEach(x=>x.classList.remove('selected'));
         b.classList.add('selected');
-
         selClub=c;
         loadMembers(c);
       };
-
       box.appendChild(b);
     });
   });
@@ -155,36 +169,31 @@ function loadMembers(club){
   .then(r=>r.json())
   .then(data=>{
     box.innerHTML=`<h3>${club}</h3>`;
-
     data.forEach(m=>{
       const b=document.createElement('button');
       b.className='btn';
       b.innerText=m;
-
       b.onclick=()=>{
         vibrate();
-
         b.classList.toggle('selected');
         const i=selMembers.indexOf(m);
         i>-1?selMembers.splice(i,1):selMembers.push(m);
       };
-
       box.appendChild(b);
     });
 
     const submit=document.createElement('button');
     submit.className='btn primary';
     submit.innerText='출석 제출';
-
     submit.onclick=submitAttendance;
     box.appendChild(submit);
   });
 }
 
-// 제출
+// 🔥 제출 안정화 (핵심 수정)
 function submitAttendance(){
   if(!selMembers.length){
-    showToast("인원을 선택하세요");
+    showToast("인원 선택");
     return;
   }
 
@@ -200,13 +209,11 @@ function submitAttendance(){
   .then(r=>r.json())
   .then(res=>{
     vibrate();
-    showToast("출석 완료!");
-
-    // 🔥 초기화 + 홈 이동
-    selDay='';
-    selClub='';
-    selMembers=[];
+    showToast(res.msg || "출석 완료");
     showView('home');
+  })
+  .catch(()=>{
+    showToast("전송 실패");
   });
 }
 
@@ -214,6 +221,43 @@ function submitAttendance(){
 function back(){
   if(step===1) showView('home');
   else showStep(step-1);
+}
+
+// 대관
+function sendBooking(){
+  fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      mode:"submitBooking",
+      name:b_name.value,
+      phone:b_phone.value,
+      space:b_space.value,
+      content:b_content.value,
+      dateTime:b_date.value,
+      hours:b_hours.value
+    })
+  })
+  .then(r=>r.json())
+  .then(res=>showToast(res.msg||"완료"));
+}
+
+// 외부
+function sendExternal(){
+  fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      mode:"submitExternal",
+      club:e_club.value,
+      phone:e_phone.value,
+      event:e_event.value,
+      content:e_content.value,
+      dateTime:e_date.value
+    })
+  })
+  .then(r=>r.json())
+  .then(res=>showToast(res.msg||"완료"));
 }
 
 </script>
