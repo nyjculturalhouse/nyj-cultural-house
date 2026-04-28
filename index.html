@@ -75,8 +75,8 @@ iframe { width:100%; height:500px; border:none; border-radius:12px;}
 
 <script>
 
-// 🔥 너 웹앱 URL
-const API = "https://script.google.com/macros/s/AKfycby_GW6a4Y16HQBF3ug19mzK0ePT1QWLcVQ9aE3Ho67ZOdpS5eaf16400IqVXBSfJFaizQ/exec";
+// ✅ 최신 웹앱 URL (너가 준걸로 교체 완료)
+const API = "https://script.google.com/macros/s/AKfycbzcvY-Kt5JMeeejmVd7IRrJEj5mdXzjWKqbex3BRUcIp-6xOlOfyK1DVSrYlbv5ZkCZ/exec";
 
 let step = 1;
 let selDay='', selClub='', selMembers=[];
@@ -155,12 +155,20 @@ box.appendChild(submit);
 });
 }
 
+// ✅ POST로 수정됨
 function submitAttendance(){
-fetch(`${API}?mode=submitAttendance&club=${encodeURIComponent(selClub)}&members=${encodeURIComponent(JSON.stringify(selMembers))}`)
+fetch(API, {
+  method: "POST",
+  body: JSON.stringify({
+    mode: "submitAttendance",
+    club: selClub,
+    members: selMembers
+  })
+})
 .then(r=>r.json())
 .then(res=>{
-alert(res.msg);
-location.reload();
+  alert(res.msg);
+  location.reload();
 });
 }
 
@@ -170,18 +178,43 @@ else step===3?document.getElementById('step-members').classList.add('hidden')
 :document.getElementById('step-clubs').classList.add('hidden'), step--;
 }
 
-// ===== 대관 =====
+// ===== 대관 (POST 적용) =====
 function sendBooking(){
-fetch(`${API}?mode=submitBooking&name=${b_name.value}&phone=${b_phone.value}&space=${b_space.value}&content=${b_content.value}&dateTime=${b_date.value}&hours=${b_hours.value}`)
+fetch(API, {
+  method: "POST",
+  body: JSON.stringify({
+    mode: "submitBooking",
+    name: b_name.value,
+    phone: b_phone.value,
+    space: b_space.value,
+    content: b_content.value,
+    dateTime: b_date.value,
+    hours: b_hours.value
+  })
+})
 .then(r=>r.json())
-.then(res=>alert(res.msg));
+.then(res=>{
+  alert(res.msg);
+});
 }
 
-// ===== 외부 =====
+// ===== 외부활동 (POST 적용) =====
 function sendExternal(){
-fetch(`${API}?mode=submitExternal&club=${e_club.value}&phone=${e_phone.value}&event=${e_event.value}&content=${e_content.value}&dateTime=${e_date.value}`)
+fetch(API, {
+  method: "POST",
+  body: JSON.stringify({
+    mode: "submitExternal",
+    club: e_club.value,
+    phone: e_phone.value,
+    event: e_event.value,
+    content: e_content.value,
+    dateTime: e_date.value
+  })
+})
 .then(r=>r.json())
-.then(res=>alert(res.msg));
+.then(res=>{
+  alert(res.msg);
+});
 }
 
 </script>
