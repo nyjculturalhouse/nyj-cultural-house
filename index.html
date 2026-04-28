@@ -75,7 +75,6 @@ iframe { width:100%; height:500px; border:none; border-radius:12px;}
 
 <script>
 
-// ✅ 최신 웹앱 URL (너가 준걸로 교체 완료)
 const API = "https://script.google.com/macros/s/AKfycbzcvY-Kt5JMeeejmVd7IRrJEj5mdXzjWKqbex3BRUcIp-6xOlOfyK1DVSrYlbv5ZkCZ/exec";
 
 let step = 1;
@@ -88,12 +87,23 @@ document.getElementById('view-'+v).classList.remove('hidden');
 if(v==='attendance') loadDays();
 }
 
+// 🔥 추가: step 전환 함수
+function showStep(n){
+  step = n;
+  document.getElementById('step-days').classList.add('hidden');
+  document.getElementById('step-clubs').classList.add('hidden');
+  document.getElementById('step-members').classList.add('hidden');
+
+  if(n===1) document.getElementById('step-days').classList.remove('hidden');
+  if(n===2) document.getElementById('step-clubs').classList.remove('hidden');
+  if(n===3) document.getElementById('step-members').classList.remove('hidden');
+}
+
 // ===== 출석 =====
 
 function loadDays(){
-step=1;
+showStep(1);
 const box=document.getElementById('step-days');
-box.classList.remove('hidden');
 box.innerHTML='<h3>요일 선택</h3>';
 
 ['화요일','수요일','목요일','금요일','토요일','일요일'].forEach(d=>{
@@ -106,9 +116,8 @@ box.appendChild(b);
 }
 
 function loadClubs(day){
-step=2;
+showStep(2); // 🔥 화면 전환
 const box=document.getElementById('step-clubs');
-box.classList.remove('hidden');
 box.innerHTML='불러오는중...';
 
 fetch(`${API}?mode=getClubs&day=${encodeURIComponent(day)}`)
@@ -126,9 +135,8 @@ box.appendChild(b);
 }
 
 function loadMembers(club){
-step=3;
+showStep(3); // 🔥 화면 전환
 const box=document.getElementById('step-members');
-box.classList.remove('hidden');
 selMembers=[];
 
 fetch(`${API}?mode=getMembers&club=${encodeURIComponent(club)}`)
@@ -155,7 +163,7 @@ box.appendChild(submit);
 });
 }
 
-// ✅ POST로 수정됨
+// 제출
 function submitAttendance(){
 fetch(API, {
   method: "POST",
@@ -172,13 +180,13 @@ fetch(API, {
 });
 }
 
+// 뒤로
 function back(){
 if(step===1) showView('home');
-else step===3?document.getElementById('step-members').classList.add('hidden')
-:document.getElementById('step-clubs').classList.add('hidden'), step--;
+else showStep(step-1);
 }
 
-// ===== 대관 (POST 적용) =====
+// ===== 대관 =====
 function sendBooking(){
 fetch(API, {
   method: "POST",
@@ -193,12 +201,10 @@ fetch(API, {
   })
 })
 .then(r=>r.json())
-.then(res=>{
-  alert(res.msg);
-});
+.then(res=>alert(res.msg));
 }
 
-// ===== 외부활동 (POST 적용) =====
+// ===== 외부 =====
 function sendExternal(){
 fetch(API, {
   method: "POST",
@@ -212,9 +218,7 @@ fetch(API, {
   })
 })
 .then(r=>r.json())
-.then(res=>{
-  alert(res.msg);
-});
+.then(res=>alert(res.msg));
 }
 
 </script>
