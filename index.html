@@ -5,33 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family: -apple-system; background: #f2f4f6; margin:0; }
-.container { max-width:500px; margin:auto; padding:20px; }
+body { font-family:-apple-system; background:#f2f4f6; margin:0;}
+.container { max-width:500px; margin:auto; padding:20px;}
 .card { background:white; padding:25px; border-radius:20px; margin-bottom:20px; box-shadow:0 8px 20px rgba(0,0,0,0.05);}
 .btn { width:100%; padding:18px; margin-top:10px; border:none; border-radius:14px; font-size:16px; cursor:pointer;}
-.primary { background:#3182f6; color:white; }
-.danger { background:#ff4d4f; color:white; }
-.selected { background:#3182f6; color:white; }
-.hidden { display:none; }
+.primary { background:#3182f6; color:white;}
+.danger { background:#ff4d4f; color:white;}
+.selected { background:#3182f6; color:white;}
+.hidden { display:none;}
 input, select { width:100%; padding:14px; margin-top:10px; border-radius:10px; border:1px solid #ddd;}
 iframe { width:100%; height:500px; border:none; border-radius:12px;}
 
 .toast {
-  position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #191f28;
-  color: white;
-  padding: 14px 20px;
-  border-radius: 12px;
-  opacity: 0;
-  transition: 0.3s;
+  position:fixed; bottom:30px; left:50%;
+  transform:translateX(-50%);
+  background:#191f28; color:white;
+  padding:14px 20px; border-radius:12px;
+  opacity:0; transition:0.3s;
 }
-.toast.show { opacity:1; }
+.toast.show { opacity:1;}
 </style>
-
 </head>
+
 <body>
 
 <div class="container">
@@ -91,9 +86,9 @@ iframe { width:100%; height:500px; border:none; border-radius:12px;}
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbzcvY-Kt5JMeeejmVd7IRrJEj5mdXzjWKqbex3BRUcIp-6xOlOfyK1DVSrYlbv5ZkCZ/exec";
+const API = "https://script.google.com/macros/s/AKfycbzg8cnqcvWHhAutwqItto9Wucn4dig92Jm8_ZfQgLZ8S2zSunebUlHjrm0aPvTILlBA/exec";
 
-let step = 1;
+let step=1;
 let selDay='', selClub='', selMembers=[];
 
 // ===== 공통 =====
@@ -109,6 +104,16 @@ function showView(v){
   document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
   document.getElementById('view-'+v).classList.remove('hidden');
   if(v==='attendance') loadDays();
+}
+
+// ===== iframe 전송 핵심 =====
+function sendByIframe(url){
+  const iframe=document.createElement("iframe");
+  iframe.style.display="none";
+  iframe.src=url;
+  document.body.appendChild(iframe);
+
+  setTimeout(()=>iframe.remove(),2000);
 }
 
 // ===== 출석 =====
@@ -191,7 +196,6 @@ function loadMembers(club){
   });
 }
 
-// 🔥 GET 방식 제출
 function submitAttendance(){
   if(!selMembers.length){
     showToast("인원 선택하세요");
@@ -202,26 +206,10 @@ function submitAttendance(){
     + `&club=${encodeURIComponent(selClub)}`
     + `&members=${encodeURIComponent(JSON.stringify(selMembers))}`;
 
-  fetch(url)
-  .then(r=>r.json())
-  .then(res=>{
-    showToast(res.msg || "완료");
-    setTimeout(()=>showView('home'),1500);
-  })
-  .catch(()=>showToast("전송 실패"));
-}
+  sendByIframe(url);
 
-function back(){
-  if(step===1) showView('home');
-  else if(step===2){
-    document.getElementById('step-clubs').classList.add('hidden');
-    document.getElementById('step-days').classList.remove('hidden');
-    step=1;
-  } else {
-    document.getElementById('step-members').classList.add('hidden');
-    document.getElementById('step-clubs').classList.remove('hidden');
-    step=2;
-  }
+  showToast("출석 완료");
+  setTimeout(()=>showView('home'),1500);
 }
 
 // ===== 대관 =====
@@ -234,10 +222,8 @@ function sendBooking(){
     + `&dateTime=${b_date.value}`
     + `&hours=${b_hours.value}`;
 
-  fetch(url)
-  .then(r=>r.json())
-  .then(res=>showToast(res.msg))
-  .catch(()=>showToast("전송 실패"));
+  sendByIframe(url);
+  showToast("대관 신청 완료");
 }
 
 // ===== 외부 =====
@@ -249,10 +235,22 @@ function sendExternal(){
     + `&content=${e_content.value}`
     + `&dateTime=${e_date.value}`;
 
-  fetch(url)
-  .then(r=>r.json())
-  .then(res=>showToast(res.msg))
-  .catch(()=>showToast("전송 실패"));
+  sendByIframe(url);
+  showToast("외부활동 등록 완료");
+}
+
+// ===== 뒤로 =====
+function back(){
+  if(step===1) showView('home');
+  else if(step===2){
+    document.getElementById('step-clubs').classList.add('hidden');
+    document.getElementById('step-days').classList.remove('hidden');
+    step=1;
+  } else {
+    document.getElementById('step-members').classList.add('hidden');
+    document.getElementById('step-clubs').classList.remove('hidden');
+    step=2;
+  }
 }
 
 </script>
