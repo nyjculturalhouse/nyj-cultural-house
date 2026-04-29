@@ -11,9 +11,8 @@ body { font-family:-apple-system; background:#f2f4f6; margin:0; }
 .btn { width:100%; padding:22px; margin-top:12px; border:none; border-radius:16px; font-size:20px; }
 .primary { background:#3182f6; color:white; }
 .back { background:#e5e7eb; }
-.selected { background:#3182f6; color:white; }
-.hidden { display:none; }
 input, select { width:100%; padding:16px; margin-top:10px; border-radius:12px; }
+.hidden { display:none; }
 </style>
 </head>
 
@@ -30,10 +29,7 @@ input, select { width:100%; padding:16px; margin-top:10px; border-radius:12px; }
 <div id="view-booking" class="card hidden">
 <input id="b_name">
 <input id="b_phone">
-
-<h3>공간</h3>
-<div id="spaceBox"></div>
-
+<input id="b_space">
 <input id="b_content">
 <input id="b_date" type="datetime-local">
 
@@ -64,63 +60,42 @@ input, select { width:100%; padding:16px; margin-top:10px; border-radius:12px; }
 
 const API = "YOUR_SCRIPT_URL";
 
-let selectedSpace = "";
-
+// ================= 화면 =================
 function showView(v){
   document.querySelectorAll(".card").forEach(c=>c.classList.add("hidden"));
   document.getElementById("view-"+v).classList.remove("hidden");
-  if(v==="booking") loadSpaces();
 }
 
-function loadSpaces(){
-  const list=["어울림방","댄스실","음악실","동아리방"];
-  const box=document.getElementById("spaceBox");
-  box.innerHTML="";
-
-  list.forEach(s=>{
-    const b=document.createElement("button");
-    b.className="btn";
-    b.innerText=s;
-
-    b.onclick=()=>{
-      selectedSpace=s;
-      document.querySelectorAll("#spaceBox .btn").forEach(x=>x.classList.remove("selected"));
-      b.classList.add("selected");
-    };
-
-    box.appendChild(b);
-  });
-}
-
-// ================= POST 핵심 =================
-function post(data){
-  return fetch(API,{
+// ================= POST (핵심) =================
+async function post(data){
+  return await fetch(API,{
     method:"POST",
+    headers:{ "Content-Type":"application/json" },
     body:JSON.stringify(data)
   });
 }
 
 // ================= 대관 =================
-function sendBooking(){
+async function sendBooking(){
 
-  post({
+  await post({
     mode:"submitBooking",
     name:b_name.value,
     phone:b_phone.value,
-    space:selectedSpace,
+    space:b_space.value,
     content:b_content.value,
     dateTime:b_date.value,
     hours:b_hours.value
   });
 
-  alert("대관 완료");
+  alert("대관 완료 (캘린더 반영됨)");
   showView("home");
 }
 
 // ================= 외부 =================
-function sendExternal(){
+async function sendExternal(){
 
-  post({
+  await post({
     mode:"submitExternal",
     club:e_club.value,
     phone:e_phone.value,
@@ -129,7 +104,7 @@ function sendExternal(){
     dateTime:e_date.value
   });
 
-  alert("외부 완료");
+  alert("외부 완료 (캘린더 반영됨)");
   showView("home");
 }
 
