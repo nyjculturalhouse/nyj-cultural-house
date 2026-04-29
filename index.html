@@ -32,18 +32,21 @@
         #member-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
         #member-list .btn { margin-top: 0; padding: 18px; font-size: 18px; }
 
-        /* ✅ 자동 소멸 메시지(토스트) 스타일 */
         #toast {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.85); color: white; padding: 30px 50px;
             border-radius: 20px; font-size: 28px; font-weight: bold; z-index: 9999;
             text-align: center; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
-        /* 배경 어둡게 */
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.3); z-index: 9998; display: none;
         }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; border-radius: 12px; overflow: hidden; }
+        th, td { padding: 15px; border: 1px solid #eee; text-align: center; }
+        th { background: #3182f6; color: white; font-weight: 600; }
+        tr:nth-child(even) { background: #f9fafb; }
     </style>
 </head>
 <body>
@@ -58,6 +61,8 @@
         <button class="btn primary" onclick="showView('booking')">대관 신청</button>
         <button class="btn primary" onclick="showView('external')">외부활동 공유</button>
         <button class="btn" onclick="showView('calendar')" style="background:#fff; border:2px solid #3182f6; color:#3182f6; margin-top:30px;">📅 동아리 활동 일정 확인</button>
+        
+        <div onclick="adminAuth()" style="text-align:center; color:#ccc; margin-top:40px; font-size:14px; cursor:pointer;">관리자 전용</div>
     </div>
 
     <div id="view-attendance" class="card hidden">
@@ -119,6 +124,13 @@
         </div>
         <button class="btn secondary" onclick="showView('home')" style="margin-top:20px;">메인으로</button>
     </div>
+
+    <div id="view-admin" class="card hidden">
+        <h3>주간 통합 출석 현황</h3>
+        <p style="text-align:center; color:#666; font-size:16px; margin-bottom:15px;">매주 전체 출석 인원 합계입니다.</p>
+        <div id="admin-content"></div>
+        <button class="btn secondary" onclick="showView('home')" style="margin-top:30px;">메인 화면으로</button>
+    </div>
 </div>
 
 <script>
@@ -129,7 +141,40 @@
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.getElementById('view-' + v).classList.remove('hidden');
         if(v === 'attendance') initDays();
+        if(v === 'admin') loadStats();
         window.scrollTo(0, 0);
+    }
+
+    // ✅ 관리자 인증 (비밀번호: 0226)
+    function adminAuth() {
+        const pw = prompt("관리자 비밀번호를 입력하세요.");
+        if(pw === "0226") showView('admin');
+        else if(pw !== null) alert("비밀번호가 올바르지 않습니다.");
+    }
+
+    async function loadStats() {
+        const box = document.getElementById('admin-content');
+        box.innerHTML = '<p style="text-align:center; padding:20px;">데이터 분석 중...</p>';
+        try {
+            const res = await fetch(`${API}?mode=getStats`);
+            const stats = await res.json();
+            
+            if(!stats || stats.length === 0) {
+                box.innerHTML = '<p style="text-align:center; padding:20px;">출석 기록이 없습니다.</p>';
+                return;
+            }
+
+            stats.sort((a, b) => b.week.localeCompare(a.week));
+
+            let html = '<table><tr><th>날짜 (주차)</th><th>전체 인원</th></tr>';
+            stats.forEach(s => {
+                html += `<tr><td>${s.week}</td><td style="font-weight:bold; color:#3182f6;">${s.total}명</td></tr>`;
+            });
+            html += '</table>';
+            box.innerHTML = html;
+        } catch (e) {
+            box.innerHTML = '<p style="text-align:center; color:red;">불러오기 실패</p>';
+        }
     }
 
     function initDays() {
@@ -138,10 +183,7 @@
         const box = document.getElementById('day-buttons'); box.innerHTML = '';
         days.forEach(d => {
             const b = document.createElement('button'); b.className = 'btn'; b.innerText = d + '요일';
-            b.onclick = () => { 
-                b.classList.add('selected'); 
-                setTimeout(() => { selDay = d; loadClubs(d); }, 300); 
-            };
+            b.onclick = () => { b.classList.add('selected'); setTimeout(() => { selDay = d; loadClubs(d); }, 300); };
             box.appendChild(b);
         });
     }
@@ -154,10 +196,7 @@
         box.innerHTML = '';
         clubs.forEach(c => {
             const b = document.createElement('button'); b.className = 'btn'; b.innerText = c;
-            b.onclick = () => { 
-                b.classList.add('selected');
-                setTimeout(() => { selClub = c; loadMembers(c); }, 300);
-            };
+            b.onclick = () => { b.classList.add('selected'); setTimeout(() => { selClub = c; loadMembers(c); }, 300); };
             box.appendChild(b);
         });
     }
@@ -190,13 +229,10 @@
         if(curStep === 1) showView('home'); else showStep(curStep - 1);
     }
 
-    // ✅ 토스트 알림 표시 함수
     function showCompleteToast() {
         document.getElementById('overlay').style.display = 'block';
         document.getElementById('toast').style.display = 'block';
-        setTimeout(() => {
-            location.reload(); // 2초 뒤 새로고침 (메인화면 이동)
-        }, 2000);
+        setTimeout(() => { location.reload(); }, 2000);
     }
 
     async function sendPost(mode) {
@@ -220,14 +256,10 @@
             if(!data.club || !data.dateTime) return alert("필수 정보를 입력해주세요.");
         }
 
-        // 전송 중임을 알리기 위해 버튼 비활성화
         const submitBtns = document.querySelectorAll('.primary');
         submitBtns.forEach(btn => btn.disabled = true);
 
-        // 실제 전송
         await fetch(API, { method: "POST", body: JSON.stringify(data), mode: "no-cors" });
-        
-        // 완료 알림 실행
         showCompleteToast();
     }
 
