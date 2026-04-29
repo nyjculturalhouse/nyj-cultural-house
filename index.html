@@ -74,28 +74,6 @@ input, select {
   border:1px solid #ddd;
   font-size:18px;
 }
-
-iframe {
-  width:100%;
-  height:650px;
-  border:none;
-  border-radius:14px;
-}
-
-.toast {
-  position:fixed;
-  bottom:30px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#191f28;
-  color:white;
-  padding:16px 24px;
-  border-radius:14px;
-  opacity:0;
-  transition:0.3s;
-  font-size:18px;
-}
-.toast.show { opacity:1; }
 </style>
 </head>
 
@@ -103,22 +81,12 @@ iframe {
 
 <div class="container">
 
-<!-- 홈 -->
 <div id="view-home" class="card">
-<h2 style="text-align:center; font-size:26px;">문화의집 시스템</h2>
+<h2 style="text-align:center;">문화의집 시스템</h2>
 
 <button class="btn primary" onclick="showView('attendance')">출석체크</button>
 <button class="btn primary" onclick="showView('booking')">대관 신청</button>
 <button class="btn primary" onclick="showView('external')">외부활동</button>
-<button class="btn primary" onclick="showView('calendar')">캘린더</button>
-</div>
-
-<!-- 출석 -->
-<div id="view-attendance" class="card hidden">
-<div id="step-days"></div>
-<div id="step-clubs" class="hidden"></div>
-<div id="step-members" class="hidden"></div>
-<button class="btn back" onclick="back()">뒤로가기</button>
 </div>
 
 <!-- 대관 -->
@@ -158,25 +126,23 @@ iframe {
 <button class="btn back" onclick="showView('home')">뒤로가기</button>
 </div>
 
-<!-- 캘린더 -->
-<div id="view-calendar" class="card hidden">
-<iframe src="https://calendar.google.com/calendar/embed?src=nyjculturalhouse%40gmail.com&ctz=Asia%2FSeoul"></iframe>
-<button class="btn back" onclick="showView('home')">뒤로가기</button>
 </div>
-
-</div>
-
-<div id="toast" class="toast"></div>
 
 <script>
 
 const API = "https://script.google.com/macros/s/AKfycbzg8cnqcvWHhAutwqItto9Wucn4dig92Jm8_ZfQgLZ8S2zSunebUlHjrm0aPvTILlBA/exec";
 
-let step=1;
-let selDay='', selClub='', selMembers=[];
 let selectedSpace="";
 
-// ================= 공간 선택 =================
+// ================= 화면 =================
+function showView(v){
+  document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
+  document.getElementById('view-'+v).classList.remove('hidden');
+
+  if(v==='booking') loadSpaces();
+}
+
+// ================= 공간 =================
 function loadSpaces(){
   const spaces=["어울림방","댄스실","음악실","동아리방"];
   const box=document.getElementById("spaceBox");
@@ -190,11 +156,7 @@ function loadSpaces(){
 
     b.onclick=()=>{
       selectedSpace=s;
-
-      document.querySelectorAll("#spaceBox .btn").forEach(x=>{
-        x.classList.remove("selected");
-      });
-
+      document.querySelectorAll("#spaceBox .btn").forEach(x=>x.classList.remove("selected"));
       b.classList.add("selected");
     };
 
@@ -202,176 +164,65 @@ function loadSpaces(){
   });
 }
 
-// ================= 화면 =================
-function showView(v){
-  document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-  document.getElementById('view-'+v).classList.remove('hidden');
-
-  if(v==='attendance') loadDays();
-  if(v==='booking') loadSpaces();
-}
-
-// ================= iframe =================
-function sendByIframe(url){
-  const iframe=document.createElement("iframe");
-  iframe.style.display="none";
-  iframe.src=url;
-  document.body.appendChild(iframe);
-  setTimeout(()=>iframe.remove(),2000);
-}
-
-// ================= 출석 =================
-function loadDays(){
-  step=1;
-  const box=document.getElementById('step-days');
-
-  box.classList.remove('hidden');
-  document.getElementById('step-clubs').classList.add('hidden');
-  document.getElementById('step-members').classList.add('hidden');
-
-  box.innerHTML='<h3>요일 선택</h3>';
-
-  ['화요일','수요일','목요일','금요일','토요일','일요일'].forEach(d=>{
-    const b=document.createElement('button');
-    b.className='btn';
-    b.innerText=d;
-
-    b.onclick=()=>{
-      selDay=d;
-      document.querySelectorAll('#step-days .btn').forEach(x=>x.classList.remove('selected'));
-      b.classList.add('selected');
-      loadClubs(d);
-    };
-
-    box.appendChild(b);
+// ================= POST 핵심 (FIX) =================
+async function post(data){
+  return fetch(API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain"
+    },
+    body: JSON.stringify(data)
   });
-}
-
-function loadClubs(day){
-  step=2;
-  document.getElementById('step-days').classList.add('hidden');
-
-  const box=document.getElementById('step-clubs');
-  box.classList.remove('hidden');
-  box.innerHTML='불러오는중...';
-
-  fetch(`${API}?mode=getClubs&day=${encodeURIComponent(day)}`)
-  .then(r=>r.json())
-  .then(data=>{
-    box.innerHTML='<h3>동아리 선택</h3>';
-
-    data.forEach(c=>{
-      const b=document.createElement('button');
-      b.className='btn';
-      b.innerText=c;
-
-      b.onclick=()=>{
-        selClub=c;
-        document.querySelectorAll('#step-clubs .btn').forEach(x=>x.classList.remove('selected'));
-        b.classList.add('selected');
-        loadMembers(c);
-      };
-
-      box.appendChild(b);
-    });
-  });
-}
-
-function loadMembers(club){
-  step=3;
-  document.getElementById('step-clubs').classList.add('hidden');
-
-  const box=document.getElementById('step-members');
-  box.classList.remove('hidden');
-
-  selMembers=[];
-
-  fetch(`${API}?mode=getMembers&club=${encodeURIComponent(club)}`)
-  .then(r=>r.json())
-  .then(data=>{
-    box.innerHTML=`<h3>${club}</h3>`;
-
-    data.forEach(m=>{
-      const b=document.createElement('button');
-      b.className='btn';
-      b.innerText=m;
-
-      b.onclick=()=>{
-        b.classList.toggle('selected');
-        const i=selMembers.indexOf(m);
-        i>-1 ? selMembers.splice(i,1) : selMembers.push(m);
-      };
-
-      box.appendChild(b);
-    });
-
-    const submit=document.createElement('button');
-    submit.className='btn primary';
-    submit.innerText='출석 제출';
-    submit.onclick=submitAttendance;
-    box.appendChild(submit);
-  });
-}
-
-function submitAttendance(){
-  if(!selMembers.length){
-    alert("인원 선택하세요");
-    return;
-  }
-
-  const url = `${API}?mode=submitAttendance`
-    + `&club=${encodeURIComponent(selClub)}`
-    + `&members=${encodeURIComponent(JSON.stringify(selMembers))}`;
-
-  sendByIframe(url);
-  showView('home');
 }
 
 // ================= 대관 =================
-function sendBooking(){
+async function sendBooking(){
 
   if(!selectedSpace){
-    alert("공간을 선택하세요");
+    alert("공간 선택");
     return;
   }
 
-  const url = `${API}?mode=submitBooking`
-    + `&name=${b_name.value}`
-    + `&phone=${b_phone.value}`
-    + `&space=${selectedSpace}`
-    + `&content=${b_content.value}`
-    + `&dateTime=${b_date.value}`
-    + `&hours=${b_hours.value}`;
+  const date = b_date.value;
+  if(!date){
+    alert("날짜 선택");
+    return;
+  }
 
-  sendByIframe(url);
-  showView('home');
+  await post({
+    mode:"submitBooking",
+    name:b_name.value,
+    phone:b_phone.value,
+    space:selectedSpace,
+    content:b_content.value,
+    dateTime:date,
+    hours:b_hours.value
+  });
+
+  alert("대관 완료");
+  showView("home");
 }
 
 // ================= 외부 =================
-function sendExternal(){
-  const url = `${API}?mode=submitExternal`
-    + `&club=${e_club.value}`
-    + `&phone=${e_phone.value}`
-    + `&event=${e_event.value}`
-    + `&content=${e_content.value}`
-    + `&dateTime=${e_date.value}`;
+async function sendExternal(){
 
-  sendByIframe(url);
-  showView('home');
-}
-
-// ================= 뒤로 =================
-function back(){
-  if(step===1) showView('home');
-  else if(step===2){
-    document.getElementById('step-clubs').classList.add('hidden');
-    document.getElementById('step-days').classList.remove('hidden');
-    step=1;
-  } else {
-    document.getElementById('step-members').classList.add('hidden');
-    document.getElementById('step-clubs').classList.remove('hidden');
-    step=2;
+  const date = e_date.value;
+  if(!date){
+    alert("날짜 선택");
+    return;
   }
+
+  await post({
+    mode:"submitExternal",
+    club:e_club.value,
+    phone:e_phone.value,
+    event:e_event.value,
+    content:e_content.value,
+    dateTime:date
+  });
+
+  alert("외부 완료");
+  showView("home");
 }
 
 </script>
