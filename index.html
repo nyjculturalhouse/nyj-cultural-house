@@ -115,4 +115,126 @@
     <div id="view-calendar" class="card hidden" style="padding: 20px 10px;">
         <h3>동아리 활동 일정</h3>
         <div class="calendar-container">
-            <iframe src="
+            <iframe src="https://calendar.google.com/calendar/embed?src=50489bb94f6692f724424cec2456fc1cc336bebd077ead18d09bba1f3ef2d4b7@group.calendar.google.com&ctz=Asia/Seoul&mode=AGENDA&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0&showTz=0" frameborder="0" scrolling="no"></iframe>
+        </div>
+        <button class="btn secondary" onclick="showView('home')" style="margin-top:20px;">메인으로</button>
+    </div>
+</div>
+
+<script>
+    const API = "https://script.google.com/macros/s/AKfycbxCDrLBT4TZin5j4avtPIIyl0Ov84VqTm7C3fLLsf_-lal0Oaw2-eTnCM1T_W3LZifN/exec";
+    let curStep = 1, selDay = '', selClub = '', selMembers = [];
+
+    function showView(v) {
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.getElementById('view-' + v).classList.remove('hidden');
+        if(v === 'attendance') initDays();
+        window.scrollTo(0, 0);
+    }
+
+    function initDays() {
+        showStep(1);
+        const days = ['화','수','목','금','토','일'];
+        const box = document.getElementById('day-buttons'); box.innerHTML = '';
+        days.forEach(d => {
+            const b = document.createElement('button'); b.className = 'btn'; b.innerText = d + '요일';
+            b.onclick = () => { 
+                b.classList.add('selected'); 
+                setTimeout(() => { selDay = d; loadClubs(d); }, 300); 
+            };
+            box.appendChild(b);
+        });
+    }
+
+    async function loadClubs(day) {
+        showStep(2);
+        const box = document.getElementById('club-buttons'); box.innerHTML = '<p style="text-align:center;">불러오는 중...</p>';
+        const res = await fetch(`${API}?mode=getClubs&day=${day}`);
+        const clubs = await res.json();
+        box.innerHTML = '';
+        clubs.forEach(c => {
+            const b = document.createElement('button'); b.className = 'btn'; b.innerText = c;
+            b.onclick = () => { 
+                b.classList.add('selected');
+                setTimeout(() => { selClub = c; loadMembers(c); }, 300);
+            };
+            box.appendChild(b);
+        });
+    }
+
+    async function loadMembers(club) {
+        showStep(3);
+        document.getElementById('club-title').innerText = club;
+        const box = document.getElementById('member-list'); box.innerHTML = ''; selMembers = [];
+        const res = await fetch(`${API}?mode=getMembers&club=${club}`);
+        const members = await res.json();
+        members.forEach(m => {
+            const b = document.createElement('button'); b.className = 'btn'; b.innerText = m;
+            b.onclick = () => {
+                b.classList.toggle('selected');
+                const i = selMembers.indexOf(m);
+                i > -1 ? selMembers.splice(i, 1) : selMembers.push(m);
+            };
+            box.appendChild(b);
+        });
+    }
+
+    function showStep(s) {
+        curStep = s;
+        document.getElementById('step-days').classList.toggle('hidden', s!==1);
+        document.getElementById('step-clubs').classList.toggle('hidden', s!==2);
+        document.getElementById('step-members').classList.toggle('hidden', s!==3);
+    }
+
+    function handleBack() {
+        if(curStep === 1) showView('home'); else showStep(curStep - 1);
+    }
+
+    // ✅ 토스트 알림 표시 함수
+    function showCompleteToast() {
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('toast').style.display = 'block';
+        setTimeout(() => {
+            location.reload(); // 2초 뒤 새로고침 (메인화면 이동)
+        }, 2000);
+    }
+
+    async function sendPost(mode) {
+        let data = { mode: mode };
+        if(mode === 'submitAttendance') {
+            data.clubName = selClub; data.attendees = selMembers;
+        } else if(mode === 'submitBooking') {
+            data.name = document.getElementById('b_name').value;
+            data.phone = document.getElementById('b_phone').value;
+            data.space = document.getElementById('b_space').value;
+            data.content = document.getElementById('b_content').value;
+            data.dateTime = document.getElementById('b_date').value;
+            data.hours = document.getElementById('b_hours').value;
+            if(!data.name || !data.dateTime) return alert("필수 정보를 입력해주세요.");
+        } else if(mode === 'submitExternal') {
+            data.club = document.getElementById('e_club').value;
+            data.phone = document.getElementById('e_phone').value;
+            data.event = document.getElementById('e_event').value;
+            data.content = document.getElementById('e_content').value;
+            data.dateTime = document.getElementById('e_date').value;
+            if(!data.club || !data.dateTime) return alert("필수 정보를 입력해주세요.");
+        }
+
+        // 전송 중임을 알리기 위해 버튼 비활성화
+        const submitBtns = document.querySelectorAll('.primary');
+        submitBtns.forEach(btn => btn.disabled = true);
+
+        // 실제 전송
+        await fetch(API, { method: "POST", body: JSON.stringify(data), mode: "no-cors" });
+        
+        // 완료 알림 실행
+        showCompleteToast();
+    }
+
+    function submitAttendance() {
+        if(!selMembers.length) return alert("인원을 선택하세요.");
+        sendPost('submitAttendance');
+    }
+</script>
+</body>
+</html>
