@@ -1,231 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-body {
-  font-family:-apple-system;
-  background:#f2f4f6;
-  margin:0;
-}
-
-.container {
-  max-width:760px;
-  margin:auto;
-  padding:24px;
-}
-
-.card {
-  background:white;
-  padding:30px;
-  border-radius:22px;
-  margin-bottom:20px;
-  box-shadow:0 8px 20px rgba(0,0,0,0.05);
-}
-
-.btn {
-  width:100%;
-  padding:22px;
-  margin-top:12px;
-  border:none;
-  border-radius:16px;
-  font-size:20px;
-  cursor:pointer;
-}
-
-.btn:active { transform:scale(0.98); }
-
-.primary { background:#3182f6; color:white; }
-.back { background:#e5e7eb; color:#333; }
-
-.selected {
-  background:#3182f6;
-  color:white;
-  position:relative;
-}
-
-.selected::after {
-  content:"✓";
-  position:absolute;
-  right:18px;
-  top:50%;
-  transform:translateY(-50%);
-  width:28px;
-  height:28px;
-  background:white;
-  color:#3182f6;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:bold;
-  font-size:16px;
-}
-
-.hidden { display:none; }
-
-input, select {
-  width:100%;
-  padding:16px;
-  margin-top:10px;
-  border-radius:12px;
-  border:1px solid #ddd;
-  font-size:18px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f2f4f6; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: auto; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .btn { width: 100%; padding: 18px; margin-top: 10px; border: none; border-radius: 14px; font-size: 18px; cursor: pointer; transition: 0.2s; background: #f9fafb; }
+        .btn:active { transform: scale(0.98); }
+        .primary { background: #3182f6; color: white; font-weight: bold; }
+        .selected { background: #3182f6 !important; color: white !important; }
+        .hidden { display: none; }
+        input, select { width: 100%; padding: 15px; margin-top: 10px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        h2, h3 { text-align: center; color: #191f28; }
+    </style>
 </head>
-
 <body>
 
 <div class="container">
+    <div id="view-home" class="card">
+        <h2>문화의집 시스템</h2>
+        <button class="btn primary" onclick="showView('attendance')">출석체크</button>
+        <button class="btn primary" onclick="showView('booking')">대관 신청</button>
+        <button class="btn primary" onclick="showView('external')">외부활동 공유</button>
+        <button class="btn" onclick="window.open('https://calendar.google.com/calendar/embed?src=50489bb94f6692f724424cec2456fc1cc336bebd077ead18d09bba1f3ef2d4b7@group.calendar.google.com&ctz=Asia/Seoul')">캘린더 확인</button>
+    </div>
 
-<div id="view-home" class="card">
-<h2 style="text-align:center;">문화의집 시스템</h2>
+    <div id="view-attendance" class="card hidden">
+        <div id="step-days">
+            <h3>요일 선택</h3>
+            <div id="day-buttons"></div>
+        </div>
+        <div id="step-clubs" class="hidden">
+            <h3>동아리 선택</h3>
+            <div id="club-buttons"></div>
+        </div>
+        <div id="step-members" class="hidden">
+            <h3 id="club-title"></h3>
+            <div id="member-list" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
+            <button class="btn primary" onclick="submitAttendance()" style="margin-top:20px;">출석 제출</button>
+        </div>
+        <button class="btn" onclick="handleBack()" style="margin-top:15px;">뒤로가기</button>
+    </div>
 
-<button class="btn primary" onclick="showView('attendance')">출석체크</button>
-<button class="btn primary" onclick="showView('booking')">대관 신청</button>
-<button class="btn primary" onclick="showView('external')">외부활동</button>
-</div>
+    <div id="view-booking" class="card hidden">
+        <h3>대관 신청</h3>
+        <input id="b_name" placeholder="신청자 성함">
+        <input id="b_phone" placeholder="전화번호">
+        <select id="b_space">
+            <option value="어울림방">어울림방</option>
+            <option value="댄스실">댄스실</option>
+            <option value="음악실">음악실</option>
+            <option value="동아리방">동아리방</option>
+        </select>
+        <input id="b_content" placeholder="사용 목적">
+        <input id="b_date" type="datetime-local">
+        <select id="b_hours"><option value="1">1시간</option><option value="2">2시간</option><option value="3">3시간</option></select>
+        <button class="btn primary" onclick="sendPost('submitBooking')">신청하기</button>
+        <button class="btn" onclick="showView('home')">메인으로</button>
+    </div>
 
-<!-- 대관 -->
-<div id="view-booking" class="card hidden">
-<h3>대관 신청</h3>
-
-<input id="b_name" placeholder="이름">
-<input id="b_phone" placeholder="전화번호">
-
-<h4>공간 선택</h4>
-<div id="spaceBox"></div>
-
-<input id="b_content" placeholder="내용">
-<input id="b_date" type="datetime-local">
-
-<select id="b_hours">
-<option value="1">1시간</option>
-<option value="2">2시간</option>
-<option value="3">3시간</option>
-</select>
-
-<button class="btn primary" onclick="sendBooking()">신청</button>
-<button class="btn back" onclick="showView('home')">뒤로가기</button>
-</div>
-
-<!-- 외부 -->
-<div id="view-external" class="card hidden">
-<h3>외부활동</h3>
-
-<input id="e_club" placeholder="동아리">
-<input id="e_phone" placeholder="연락처">
-<input id="e_event" placeholder="행사명">
-<input id="e_content" placeholder="내용">
-<input id="e_date" type="datetime-local">
-
-<button class="btn primary" onclick="sendExternal()">제출</button>
-<button class="btn back" onclick="showView('home')">뒤로가기</button>
-</div>
-
+    <div id="view-external" class="card hidden">
+        <h3>외부활동 공유</h3>
+        <input id="e_club" placeholder="동아리명">
+        <input id="e_phone" placeholder="연락처">
+        <input id="e_event" placeholder="행사명">
+        <input id="e_content" placeholder="내용">
+        <input id="e_date" type="datetime-local">
+        <button class="btn primary" onclick="sendPost('submitExternal')">공유하기</button>
+        <button class="btn" onclick="showView('home')">메인으로</button>
+    </div>
 </div>
 
 <script>
+    const API = "https://script.google.com/macros/s/AKfycbxCDrLBT4TZin5j4avtPIIyl0Ov84VqTm7C3fLLsf_-lal0Oaw2-eTnCM1T_W3LZifN/exec";
+    let curStep = 1, selDay = '', selClub = '', selMembers = [];
 
-const API = "https://script.google.com/macros/s/AKfycbzg8cnqcvWHhAutwqItto9Wucn4dig92Jm8_ZfQgLZ8S2zSunebUlHjrm0aPvTILlBA/exec";
+    function showView(v) {
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.getElementById('view-' + v).classList.remove('hidden');
+        if(v === 'attendance') initDays();
+    }
 
-let selectedSpace="";
+    function initDays() {
+        showStep(1);
+        const days = ['화','수','목','금','토','일'];
+        const box = document.getElementById('day-buttons'); box.innerHTML = '';
+        days.forEach(d => {
+            const b = document.createElement('button'); b.className = 'btn'; b.innerText = d + '요일';
+            b.onclick = () => { selDay = d; loadClubs(d); };
+            box.appendChild(b);
+        });
+    }
 
-// ================= 화면 =================
-function showView(v){
-  document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-  document.getElementById('view-'+v).classList.remove('hidden');
+    async function loadClubs(day) {
+        showStep(2);
+        const res = await fetch(`${API}?mode=getClubs&day=${day}`);
+        const clubs = await res.json();
+        const box = document.getElementById('club-buttons'); box.innerHTML = '';
+        clubs.forEach(c => {
+            const b = document.createElement('button'); b.className = 'btn'; b.innerText = c;
+            b.onclick = () => { selClub = c; loadMembers(c); };
+            box.appendChild(b);
+        });
+    }
 
-  if(v==='booking') loadSpaces();
-}
+    async function loadMembers(club) {
+        showStep(3);
+        document.getElementById('club-title').innerText = club;
+        const res = await fetch(`${API}?mode=getMembers&club=${club}`);
+        const members = await res.json();
+        const box = document.getElementById('member-list'); box.innerHTML = ''; selMembers = [];
+        members.forEach(m => {
+            const b = document.createElement('button'); b.className = 'btn'; b.innerText = m;
+            b.onclick = () => {
+                b.classList.toggle('selected');
+                const i = selMembers.indexOf(m);
+                i > -1 ? selMembers.splice(i, 1) : selMembers.push(m);
+            };
+            box.appendChild(b);
+        });
+    }
 
-// ================= 공간 =================
-function loadSpaces(){
-  const spaces=["어울림방","댄스실","음악실","동아리방"];
-  const box=document.getElementById("spaceBox");
+    function showStep(s) {
+        curStep = s;
+        document.getElementById('step-days').classList.toggle('hidden', s!==1);
+        document.getElementById('step-clubs').classList.toggle('hidden', s!==2);
+        document.getElementById('step-members').classList.toggle('hidden', s!==3);
+    }
 
-  box.innerHTML="";
+    function handleBack() {
+        if(curStep === 1) showView('home'); else showStep(curStep - 1);
+    }
 
-  spaces.forEach(s=>{
-    const b=document.createElement("button");
-    b.className="btn";
-    b.innerText=s;
+    async function sendPost(mode) {
+        let data = { mode: mode };
+        if(mode === 'submitAttendance') {
+            data.clubName = selClub; data.attendees = selMembers;
+        } else if(mode === 'submitBooking') {
+            data.name = document.getElementById('b_name').value;
+            data.phone = document.getElementById('b_phone').value;
+            data.space = document.getElementById('b_space').value;
+            data.content = document.getElementById('b_content').value;
+            data.dateTime = document.getElementById('b_date').value;
+            data.hours = document.getElementById('b_hours').value;
+        } else if(mode === 'submitExternal') {
+            data.club = document.getElementById('e_club').value;
+            data.phone = document.getElementById('e_phone').value;
+            data.event = document.getElementById('e_event').value;
+            data.content = document.getElementById('e_content').value;
+            data.dateTime = document.getElementById('e_date').value;
+        }
 
-    b.onclick=()=>{
-      selectedSpace=s;
-      document.querySelectorAll("#spaceBox .btn").forEach(x=>x.classList.remove("selected"));
-      b.classList.add("selected");
-    };
+        await fetch(API, { method: "POST", body: JSON.stringify(data), mode: "no-cors" });
+        alert("처리가 완료되었습니다!");
+        location.reload();
+    }
 
-    box.appendChild(b);
-  });
-}
-
-// ================= POST 핵심 (FIX) =================
-async function post(data){
-  return fetch(API, {
-    method: "POST",
-    headers: {
-      "Content-Type": "text/plain"
-    },
-    body: JSON.stringify(data)
-  });
-}
-
-// ================= 대관 =================
-async function sendBooking(){
-
-  if(!selectedSpace){
-    alert("공간 선택");
-    return;
-  }
-
-  const date = b_date.value;
-  if(!date){
-    alert("날짜 선택");
-    return;
-  }
-
-  await post({
-    mode:"submitBooking",
-    name:b_name.value,
-    phone:b_phone.value,
-    space:selectedSpace,
-    content:b_content.value,
-    dateTime:date,
-    hours:b_hours.value
-  });
-
-  alert("대관 완료");
-  showView("home");
-}
-
-// ================= 외부 =================
-async function sendExternal(){
-
-  const date = e_date.value;
-  if(!date){
-    alert("날짜 선택");
-    return;
-  }
-
-  await post({
-    mode:"submitExternal",
-    club:e_club.value,
-    phone:e_phone.value,
-    event:e_event.value,
-    content:e_content.value,
-    dateTime:date
-  });
-
-  alert("외부 완료");
-  showView("home");
-}
-
+    function submitAttendance() {
+        if(!selMembers.length) return alert("인원을 선택하세요.");
+        sendPost('submitAttendance');
+    }
 </script>
-
 </body>
 </html>
